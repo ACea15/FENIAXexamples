@@ -445,7 +445,7 @@ PBAR model by Rafa
 
 * FENIAX
 :PROPERTIES:
-:header-args: :tangle ./P3_simulation.py :session *pyfeniax* :comments yes :results none
+:header-args: :tangle ./P3_settings.py :session *pyfeniax* :comments yes :results none
 :END:
 
 Load simulation modules
@@ -471,6 +471,7 @@ Set model to be run (mi), initial conditions and whether to include gravity forc
 
 #+begin_src python
   inp = Inputs()
+  # inp.log.level="debug"
   inp.engine = "intrinsicmodal"
   inp.fem.connectivity = {'rbeam': None, 'lbeam': None}
   inp.fem.Ka_name = f"./FEM/Ka_{label}.npy"
@@ -530,7 +531,7 @@ For MATLAB postprocessing one can save any of the tensors as:
 Multiple cases
 #+begin_src python
 
-  RUN_MULTIPLE = False
+  RUN_MULTIPLE = True
   if RUN_MULTIPLE:
       vz = [0.2, 0.3, 0.4, 0.5, 0.6]
       for i, vzi in enumerate(vz):

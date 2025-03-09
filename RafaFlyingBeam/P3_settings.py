@@ -19,7 +19,7 @@ label = 'm1'
 
 # [[file:modelgen.org::*FENIAX][FENIAX:3]]
 inp = Inputs()
-inp.log.level="debug"
+# inp.log.level="debug"
 inp.engine = "intrinsicmodal"
 inp.fem.connectivity = {'rbeam': None, 'lbeam': None}
 inp.fem.Ka_name = f"./FEM/Ka_{label}.npy"
@@ -58,7 +58,7 @@ sol = feniax.feniax_main.main(input_obj=config)
 # FENIAX:3 ends here
 
 # [[file:modelgen.org::*FENIAX][FENIAX:5]]
-RUN_MULTIPLE = False
+RUN_MULTIPLE = True
 if RUN_MULTIPLE:
     vz = [0.2, 0.3, 0.4, 0.5, 0.6]
     for i, vzi in enumerate(vz):
@@ -74,7 +74,7 @@ if RUN_MULTIPLE:
                                       )
         config =  configuration.Config(inp)
         sol = feniax.feniax_main.main(input_obj=config)
-
+  
         inp.driver.sol_path= pathlib.Path(
             f"./results_antisym{label_i}")
         inp.system.init_states = dict(q1=["nodal_prescribed",
