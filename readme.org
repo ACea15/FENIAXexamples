@@ -1,8 +1,11 @@
-This is the list of examples that have been tested in the code. The aim is to keep growing these examples
+This is the list of examples that have been tested in the [[https://github.com/ACea15/FENIAX/blob/master/][FENIAX]] program. The examples and their categories are expected to keep growing.
 
 - Usually inside each example there is a form of settings.py file that when run as "python settings.py" generates a results folder with the output of the simulation (don't forget to activate your python environment if using a package manager).
-- For postprocessing, navigate to Streamlit folder and launch as "streamlit run Home.py". This launches a process in your web browser. In the Home page select your results folder from previous step and start navigating the webpage to explore results.
-- Most of these examples have been also made into a test case. 
+- For postprocessing, we have develop a small dashboard application intended for productivity: plots of the various inputs and outputs of the program are generated automatically allowing fast visualisation and results assessment.
+  - Plotly is used as the back-end for interactive graphics generation and Streamlit is the front-end for the user (they are installed when ~pip install .[all]~ is used). 
+  - Navigate to Streamlit folder and launch as "streamlit run Home.py". This launches a process in your web browser.
+  - In the Home page select your results folder from previous step and start navigating the app to explore results. 
+- Most of these examples have also been made into a test case of the FENIAX repository, check [[https://github.com/ACea15/FENIAX/blob/master/tests/intrinsic][link]]. 
   
 * Structural-only simulations
 ** Static problems
