@@ -36,7 +36,7 @@ https://www.sciencedirect.com/science/article/pii/0045782581901316?via%3Dihub
 *** RafaBeam
 - Clamped, slender cantilever made out of shell elements undergoing nonlinear free vibrations in response to initial velocity field.
 - From: https://arc.aiaa.org/doi/10.2514/1.J057556
--Verified against Nastran and literature.
+- Verified against Nastran and literature.
 *** RafaFlyingBeam
 - 3-mass beam in-plane free flying.
 - Comparison with analytical solution.
