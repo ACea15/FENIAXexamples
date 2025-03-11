@@ -37,15 +37,15 @@ inp.system.name = "s1"
 inp.system.solution = "dynamic"
 inp.system.bc1 = 'free'
 inp.system.xloads.gravity_forces = gravity_forces
-inp.system.t1 = 2.
-inp.system.tn = 25001
+inp.system.t1 = 2.*10
+inp.system.tn = 20000 * 10 + 1
 inp.system.solver_library = "runge_kutta" #"diffrax" #
 inp.system.solver_function = "ode"
 inp.system.solver_settings = dict(solver_name="rk4")
 inp.system.init_states = dict(q1=["nodal_prescribed",
                                   ([[v_x, v_y, v_z, omega_x, omega_y, omega_z],
-                                    [v_x, v_y, v_z, omega_x, omega_y, omega_z],
-                                    [v_x, v_y, v_z, omega_x, omega_y, omega_z]]
+                                    [v_x, v_y, v_z - omega_y * 1, omega_x, omega_y, omega_z],
+                                    [v_x, v_y, v_z + omega_y * 1, omega_x, omega_y, omega_z]]
                                    ,)
                                   ]
                               )
@@ -67,8 +67,8 @@ if RUN_MULTIPLE:
             f"./results_sym{label_i}")
         inp.system.init_states = dict(q1=["nodal_prescribed",
                                           ([[v_x, v_y, v_z, omega_x, omega_y, omega_z],
-                                            [v_x, v_y, v_z + vzi, omega_x, omega_y, omega_z],
-                                            [v_x, v_y, v_z + vzi, omega_x, omega_y, omega_z]]
+                                            [v_x, v_y, v_z - omega_y * 1, omega_x, omega_y, omega_z],
+                                            [v_x, v_y, v_z + omega_y * 1, omega_x, omega_y, omega_z]]
                                            ,)
                                           ]
                                       )
@@ -79,8 +79,8 @@ if RUN_MULTIPLE:
             f"./results_antisym{label_i}")
         inp.system.init_states = dict(q1=["nodal_prescribed",
                                           ([[v_x, v_y, v_z, omega_x, omega_y, omega_z],
-                                            [v_x, v_y, v_z + vzi, omega_x, omega_y, omega_z],
-                                            [v_x, v_y, v_z - vzi, omega_x, omega_y, omega_z]]
+                                            [v_x, v_y, v_z - omega_y * 1 + vzi, omega_x, omega_y, omega_z],
+                                            [v_x, v_y, v_z + omega_y * 1 - vzi, omega_x, omega_y, omega_z]]
                                            ,)
                                           ]
                                       )
