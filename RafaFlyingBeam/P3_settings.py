@@ -17,7 +17,7 @@ gravity_forces = False
 label = 'm1'
 # FENIAX:2 ends here
 
-# [[file:modelgen.org::*FENIAX][FENIAX:3]]
+# [[file:modelgen.org::*only-RB modes][only-RB modes:1]]
 inp = Inputs()
 # inp.log.level="debug"
 inp.engine = "intrinsicmodal"
@@ -27,7 +27,7 @@ inp.fem.Ma_name = f"./FEM/Ma_{label}.npy"
 inp.fem.eig_names = [f"./FEM/eigenvals_{label}.npy",
                      f"./FEM/eigenvecs_{label}.npy"]
 inp.fem.grid = f"./FEM/structuralGrid_{label}"
-inp.fem.num_modes = 13  # use 12 for model 5!
+inp.fem.num_modes = 6  
 inp.fem.eig_type = "inputs"
 inp.driver.typeof = "intrinsic"
 inp.driver.sol_path= pathlib.Path(
@@ -55,20 +55,21 @@ sol = feniax.feniax_main.main(input_obj=config)
 # all solution data in the sol object (everything are tensors)
 # for instance: sol.dynamicsystem_sys1.ra position of node [time_step, component, node_id]
 # sol.dynamicsystem_s1.X1 for velocities and so on
-# FENIAX:3 ends here
+# only-RB modes:1 ends here
 
-# [[file:modelgen.org::*FENIAX][FENIAX:5]]
+# [[file:modelgen.org::*Multiple cases][Multiple cases:1]]
 RUN_MULTIPLE = True
 if RUN_MULTIPLE:
-    vz = [0.2, 0.3, 0.4, 0.5, 0.6]
+    inp.fem.num_modes = 13
+    vz = [0., 0.2, 0.3, 0.4, 0.5, 0.6]
     for i, vzi in enumerate(vz):
         label_i = label + f"vz{i}"
         inp.driver.sol_path= pathlib.Path(
             f"./results_sym{label_i}")
         inp.system.init_states = dict(q1=["nodal_prescribed",
                                           ([[v_x, v_y, v_z, omega_x, omega_y, omega_z],
-                                            [v_x, v_y, v_z - omega_y * 1, omega_x, omega_y, omega_z],
-                                            [v_x, v_y, v_z + omega_y * 1, omega_x, omega_y, omega_z]]
+                                            [v_x, v_y, v_z - omega_y * 1 + vzi, omega_x, omega_y, omega_z],
+                                            [v_x, v_y, v_z + omega_y * 1 + vzi, omega_x, omega_y, omega_z]]
                                            ,)
                                           ]
                                       )
@@ -85,9 +86,8 @@ if RUN_MULTIPLE:
                                           ]
                                       )
         config =  configuration.Config(inp)
-        sol = feniax.feniax_main.main(input_obj=config)
-
+        sol = feniax.feniax_main.main(input_obj=config)          
 # all solution data in the sol object (everything are tensors)
 # for instance: sol.dynamicsystem_sys1.ra position of node [time_step, component, node_id]
-# sol.dynamicsystem_sys1.X1 for velocities and so on
-# FENIAX:5 ends here
+# sol.dynamicsystem_s1.X1 for velocities and so on
+# Multiple cases:1 ends here
