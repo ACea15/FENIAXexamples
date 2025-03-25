@@ -2875,6 +2875,110 @@ for local testing:
   solgust21shard = feniax.feniax_shardmain.main(input_dict=inp, device_count=device_count)
 #+end_src
 
+**** Plot
+
+#+begin_src python  :session *pyshard2*
+  import plotly.graph_objects as go
+  import plotly.io as pio
+  import jax.numpy as jnp
+  node = 13
+  points = solgust21shard.shards_s1.points
+
+  gust_wn = 11
+  gust_w = points[:gust_wn,3]
+  gust_l = points[::gust_wn,2]
+  gust_ln = 11
+  x2max = jnp.max(solgust21shard.dynamicsystem_s1.X2[:,:, :, node], axis=1) # points,6
+  x2min = jnp.min(solgust21shard.dynamicsystem_s1.X2[:,:, :, node], axis=1)
+  x2max_mesh = x2max.reshape((gust_ln, gust_wn,6)) # contour: wn is x, ln is y
+  x2min_mesh = x2min.reshape((gust_ln, gust_wn,6))
+
+#+end_src
+
+plotly color scales:
+
+- Blackbody
+- Bluered
+- Cividis
+- Earth
+- Electric
+- Greens
+- Greys
+- Hot
+- Jet
+- Picnic
+- Portland
+- Rainbow
+- RdBu
+- Reds
+- Viridis
+- YlGnBu
+- YlOrRd
+
+#+begin_src python  :session *pyshard2*
+  scale_quality = 6
+  def fig_update(fig):
+      fig.update_xaxes(
+          #tickfont = dict(size=20),
+          #title_font_size=20,
+          mirror=True,
+          ticks='outside',
+          showline=True,
+          linecolor='black'
+          )
+      fig.update_yaxes(#title_font_size=20,
+                       #zeroline=True,
+                       mirror=True,
+                       ticks='outside',
+                       showline=True,
+                       linecolor='black',
+                       #gridcolor='lightgrey'
+                       )
+      fig.update_layout(font_size=20,
+                        margin=dict(
+                            autoexpand=True,
+                            l=0,
+                            r=0,
+                            t=2,
+                            b=0
+                        ))
+      fig.update_yaxes(title="Gust length")
+      fig.update_xaxes(title="Gust intensity")
+      # fig.update_coloraxes(colorbar=dict(tickfont=dict(color='red',size=30)))
+
+  for i in range(6):
+      fig = go.Figure(data =
+                      go.Contour(
+                          z= x2max_mesh[:,:,i],
+                          x=gust_w, # horizontal axis
+                          y=gust_l, # vertical axis
+                          colorscale='Blues',
+                          colorbar=dict(
+                              tickfont=dict(size=20)
+                          )  # Set tick font size
+                      )
+                      )
+      fig_update(fig)
+      pio.write_image(fig, f"./figs/x2max_c{i}.pdf", scale=scale_quality)
+      fig.show()  
+          
+      fig = go.Figure(data =
+                      go.Contour(
+                          z= -x2min_mesh[:,:,i],
+                          x=gust_w, # horizontal axis
+                          y=gust_l, # vertical axis
+                          colorscale='Blues',
+                          colorbar=dict(
+                              tickfont=dict(size=20)
+                          )  # Set tick font size
+                      )
+                      )
+      fig_update(fig)
+      pio.write_image(fig, f"./figs/x2min_c{i}.pdf", scale=scale_quality)
+      fig.show()  
+#+end_src
+
+
 
 * Gust solution (146)
 :PROPERTIES:
