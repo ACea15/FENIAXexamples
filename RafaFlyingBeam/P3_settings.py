@@ -7,16 +7,18 @@ import pathlib
 # FENIAX:1 ends here
 
 # [[file:modelgen.org::*FENIAX][FENIAX:2]]
-v_x = 1.
+v_x = 0.
 v_y = 0.
 v_z = 0.
 omega_x = 0.
 omega_y = 1.
 omega_z = 0.
-gravity_forces = True
+gravity_forces = False
 gravity_label = "g" if gravity_forces else ""
-label = 'm1'
-label_name = label + gravity_label
+label = 'm7'
+num_modes = 8
+label_name = label + f"N{num_modes}" + gravity_label
+
 # FENIAX:2 ends here
 
 # [[file:modelgen.org::*only-RB modes][only-RB modes:1]]
@@ -26,10 +28,10 @@ inp.engine = "intrinsicmodal"
 inp.fem.connectivity = {'rbeam': None, 'lbeam': None}
 inp.fem.Ka_name = f"./FEM/Ka_{label}.npy"
 inp.fem.Ma_name = f"./FEM/Ma_{label}.npy"
-inp.fem.eig_names = [f"./FEM/eigenvalsX_{label}.npy",
-                     f"./FEM/eigenvecsX_{label}.npy"]
+inp.fem.eig_names = [f"./FEM/eigenvals_{label}.npy",
+                     f"./FEM/eigenvecs_{label}.npy"]
 inp.fem.grid = f"./FEM/structuralGrid_{label}"
-inp.fem.num_modes = 6  
+inp.fem.num_modes = 6
 inp.fem.eig_type = "inputs"
 inp.driver.typeof = "intrinsic"
 inp.driver.sol_path= pathlib.Path(
@@ -39,8 +41,8 @@ inp.system.name = "s1"
 inp.system.solution = "dynamic"
 inp.system.bc1 = 'free'
 inp.system.xloads.gravity_forces = gravity_forces
-inp.system.t1 = 2.*10
-inp.system.tn = 20000 * 10 + 1
+inp.system.t1 = 10
+inp.system.tn = 20000 * 20 + 1
 inp.system.solver_library = "runge_kutta" #"diffrax" #
 inp.system.solver_function = "ode"
 inp.system.solver_settings = dict(solver_name="rk4")
@@ -62,7 +64,7 @@ sol = feniax.feniax_main.main(input_obj=config)
 # [[file:modelgen.org::*Multiple cases][Multiple cases:1]]
 RUN_MULTIPLE = True
 if RUN_MULTIPLE:
-    inp.fem.num_modes = 13 - 2
+    inp.fem.num_modes = num_modes  #8 #13 - 2
     vz = [0., 0.2, 0.3, 0.4, 0.5, 0.6]
     for i, vzi in enumerate(vz):
         label_i = label_name + f"vz{i}"

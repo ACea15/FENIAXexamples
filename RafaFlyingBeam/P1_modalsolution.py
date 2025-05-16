@@ -118,6 +118,18 @@ mesh4 = build_bdf(config4)
 mesh4.write_bdf("./NASTRAN/model4.bdf", size=8, is_double=False, close=True)
 # Create nastran files for FE extraction:1 ends here
 
+# [[file:modelgen.org::*Create nastran files for FE extraction][Create nastran files for FE extraction:1]]
+config1 = Config()
+mesh1 = build_bdf(config1)
+mesh1.write_bdf("./NASTRAN/model1.bdf", size=8, is_double=False, close=True)
+# Create nastran files for FE extraction:1 ends here
+
+# [[file:modelgen.org::*Create nastran files for FE extraction][Create nastran files for FE extraction:1]]
+config1 = Config(BAR=True)
+mesh1 = build_bdf(config1)
+mesh1.write_bdf("./NASTRAN/model7.bdf", size=8, is_double=False, close=True)
+# Create nastran files for FE extraction:1 ends here
+
 # [[file:modelgen.org::*Read and save FEM and FENIAX grid][Read and save FEM and FENIAX grid:1]]
 num_models = 5
 eigenvalues_list = []
