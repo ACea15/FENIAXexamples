@@ -62,7 +62,7 @@ sol = feniax.feniax_main.main(input_obj=config)
 # only-RB modes:1 ends here
 
 # [[file:modelgen.org::*Multiple cases][Multiple cases:1]]
-RUN_MULTIPLE = False
+RUN_MULTIPLE = True
 if RUN_MULTIPLE:
     inp.fem.num_modes = num_modes  #8 #13 - 2
     vz = [0., 0.2, 0.3, 0.4, 0.5, 0.6]
