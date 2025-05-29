@@ -24,13 +24,13 @@ omega_z = 0.
 # Options
 gravity_forces = False
 gravity_label = "g" if gravity_forces else ""
-label = 'm7'
-num_modes = 10 # [8, 10]
+label = 'm8'
+num_modes = 11 # [8, 10]
 
 # 8 modes simulation: 6RB modes  + 2 bending modes (symmetric and antysymmetric)
 # 10 modes simulation: 6RB modes + 2 bending modes + 2 roational modes in y (also symmetric and antysymmetric)
 
-
+ic = "bending" # "bending", "omega"
 
 # Inputs to FENIAX
 inp = Inputs()
@@ -39,8 +39,8 @@ inp.engine = "intrinsicmodal"
 inp.fem.connectivity = {'rbeam': None, 'lbeam': None}
 inp.fem.Ka_name = f"./FEM/Ka_{label}.npy"
 inp.fem.Ma_name = f"./FEM/Ma_{label}.npy"
-inp.fem.eig_names = [f"./FEM/eigenvalsX_{label}.npy",
-                     f"./FEM/eigenvecsX_{label}.npy"]
+inp.fem.eig_names = [f"./FEM/eigenvals_{label}.npy",
+                     f"./FEM/eigenvecs_{label}.npy"]
 inp.fem.grid = f"./FEM/structuralGrid_{label}"
 inp.fem.eig_type = "inputs"
 inp.driver.typeof = "intrinsic"
@@ -65,14 +65,24 @@ if ni==num_modes:
     for i, vzi in enumerate(vz):
         label_i = label_name + f"vz{i}"
         inp.driver.sol_path= pathlib.Path(
-            f"./results_ant{label_i}")
-        inp.system.init_states = dict(q1=["nodal_prescribed",
-                                          ([[v_x, v_y, v_z, omega_x, omega_y, omega_z],
-                                            [v_x, v_y, v_z - omega_y * 1 - vzi, omega_x, omega_y, omega_z],
-                                            [v_x, v_y, v_z + omega_y * 1 + vzi, omega_x, omega_y, omega_z]]
-                                           ,)
-                                          ]
-                                      )
+            f"./results_ant{label_i}{ic}")
+        if ic == "bending":
+            inp.system.init_states = dict(q1=["nodal_prescribed",
+                                              ([[v_x, v_y, v_z, omega_x, (omega_y+vzi), omega_z],
+                                                [v_x, v_y, v_z - (omega_y) * 1 - vzi, omega_x, (omega_y-2*vzi), omega_z],
+                                                [v_x, v_y, v_z + (omega_y) * 1 + vzi, omega_x, (omega_y-2*vzi), omega_z]]
+                                               ,)
+                                              ]
+                                          )
+        elif ic == "omega":
+          inp.system.init_states = dict(q1=["nodal_prescribed",
+                                            ([[v_x, v_y, v_z, omega_x, omega_y, omega_z],
+                                              [v_x, v_y, v_z - omega_y * 1 - vzi, omega_x, omega_y, omega_z],
+                                              [v_x, v_y, v_z + omega_y * 1 + vzi, omega_x, omega_y, omega_z]]
+                                             ,)
+                                            ]
+                                        )
+            
         config =  configuration.Config(inp)
         sol = feniax.feniax_main.main(input_obj=config) 
 
@@ -166,45 +176,45 @@ results = read_results()
 
 
 # Plot angular velocity in center node, 8 modes don't capture  antisymmetric oscillations 
-x1, y1 = putils.pickIntrinsic2D(results["antm7N10vz1"].data.dynamicsystem_s1.t,
-                                results["antm7N10vz1"].data.dynamicsystem_s1.X1,
+x1, y1 = putils.pickIntrinsic2D(results[f"ant{label}N{num_modes}vz1{ic}"].data.dynamicsystem_s1.t,
+                                results[f"ant{label}N{num_modes}vz1{ic}"].data.dynamicsystem_s1.X1,
                                 fixaxis2=dict(node=0, dim=4))
-x2, y2 = putils.pickIntrinsic2D(results["antm7N10vz2"].data.dynamicsystem_s1.t,
-                                results["antm7N10vz2"].data.dynamicsystem_s1.X1,
+x2, y2 = putils.pickIntrinsic2D(results[f"ant{label}N{num_modes}vz2{ic}"].data.dynamicsystem_s1.t,
+                                results[f"ant{label}N{num_modes}vz2{ic}"].data.dynamicsystem_s1.X1,
                                 fixaxis2=dict(node=0, dim=4))
-x3, y3 = putils.pickIntrinsic2D(results["antm7N10vz3"].data.dynamicsystem_s1.t,
-                                results["antm7N10vz3"].data.dynamicsystem_s1.X1,
+x3, y3 = putils.pickIntrinsic2D(results[f"ant{label}N{num_modes}vz3{ic}"].data.dynamicsystem_s1.t,
+                                results[f"ant{label}N{num_modes}vz3{ic}"].data.dynamicsystem_s1.X1,
                                 fixaxis2=dict(node=0, dim=4)) 
-x4, y4 = putils.pickIntrinsic2D(results["antm7N10vz4"].data.dynamicsystem_s1.t,
-                                results["antm7N10vz4"].data.dynamicsystem_s1.X1,
+x4, y4 = putils.pickIntrinsic2D(results[f"ant{label}N{num_modes}vz4{ic}"].data.dynamicsystem_s1.t,
+                                results[f"ant{label}N{num_modes}vz4{ic}"].data.dynamicsystem_s1.X1,
                                 fixaxis2=dict(node=0, dim=4)) 
-x5, y5 = putils.pickIntrinsic2D(results["antm7N10vz5"].data.dynamicsystem_s1.t,
-                                results["antm7N10vz5"].data.dynamicsystem_s1.X1,
+x5, y5 = putils.pickIntrinsic2D(results[f"ant{label}N{num_modes}vz5{ic}"].data.dynamicsystem_s1.t,
+                                results[f"ant{label}N{num_modes}vz5{ic}"].data.dynamicsystem_s1.X1,
                                 fixaxis2=dict(node=0, dim=4)) 
 
 fig = plot_multiple_2d([x1/T,x2/T,x3/T,x4/T,x5/T], 
                        [y1/(omega_0/4), y2/(omega_0/4),y3/(omega_0/4),y4/(omega_0/4),y5/(omega_0/4)], 
-                        ylim=[0.9,2],
+                        #ylim=[0.9,2],
                         line_styles=['-','--','--','-'],
                         filename='img/rotvel.png')
 
 
 
 # Plot inertial velocity of node 1 in material frame.
-x1, y1 = putils.pickIntrinsic2D(results["antm7N10vz1"].data.dynamicsystem_s1.t,
-                                results["antm7N10vz1"].data.dynamicsystem_s1.X1,
+x1, y1 = putils.pickIntrinsic2D(results[f"ant{label}N{num_modes}vz1{ic}"].data.dynamicsystem_s1.t,
+                                results[f"ant{label}N{num_modes}vz1{ic}"].data.dynamicsystem_s1.X1,
                                 fixaxis2=dict(node=1, dim=2)) 
-x2, y2 = putils.pickIntrinsic2D(results["antm7N10vz2"].data.dynamicsystem_s1.t,
-                                results["antm7N10vz2"].data.dynamicsystem_s1.X1,
+x2, y2 = putils.pickIntrinsic2D(results[f"ant{label}N{num_modes}vz2{ic}"].data.dynamicsystem_s1.t,
+                                results[f"ant{label}N{num_modes}vz2{ic}"].data.dynamicsystem_s1.X1,
                                 fixaxis2=dict(node=1, dim=2)) 
-x3, y3 = putils.pickIntrinsic2D(results["antm7N10vz3"].data.dynamicsystem_s1.t,
-                                results["antm7N10vz3"].data.dynamicsystem_s1.X1,
+x3, y3 = putils.pickIntrinsic2D(results[f"ant{label}N{num_modes}vz3{ic}"].data.dynamicsystem_s1.t,
+                                results[f"ant{label}N{num_modes}vz3{ic}"].data.dynamicsystem_s1.X1,
                                 fixaxis2=dict(node=1, dim=2)) 
-x4, y4 = putils.pickIntrinsic2D(results["antm7N10vz4"].data.dynamicsystem_s1.t,
-                                results["antm7N10vz4"].data.dynamicsystem_s1.X1,
+x4, y4 = putils.pickIntrinsic2D(results[f"ant{label}N{num_modes}vz4{ic}"].data.dynamicsystem_s1.t,
+                                results[f"ant{label}N{num_modes}vz4{ic}"].data.dynamicsystem_s1.X1,
                                 fixaxis2=dict(node=1, dim=2))
-x5, y5 = putils.pickIntrinsic2D(results["antm7N10vz5"].data.dynamicsystem_s1.t,
-                                results["antm7N10vz5"].data.dynamicsystem_s1.X1,
+x5, y5 = putils.pickIntrinsic2D(results[f"ant{label}N{num_modes}vz5{ic}"].data.dynamicsystem_s1.t,
+                                results[f"ant{label}N{num_modes}vz5{ic}"].data.dynamicsystem_s1.X1,
                                 fixaxis2=dict(node=1, dim=2))
 fig = plot_multiple_2d([x1/T,x2/T,x3/T,x4/T,x5/T], 
                        [y1,y2,y3,y4,y5], 

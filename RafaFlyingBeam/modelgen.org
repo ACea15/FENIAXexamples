@@ -439,7 +439,6 @@ Horizontal bar, no offset
   cd -
 #+end_src
 
-
 ** Model 7
 
 Horizontal bar, no offset
@@ -522,6 +521,103 @@ Horizontal bar, no offset
 
 #+end_src
 
+
+** Model 8
+
+Horizontal bar, no offset, high stiffness
+*** Create nastran files for FE extraction
+#+begin_src python
+  config1 = Config(BAR=True, A=0.05*10000)
+  mesh1 = build_bdf(config1)
+  mesh1.write_bdf("./NASTRAN/model8.bdf", size=8, is_double=False, close=True)
+#+end_src
+
+- For eigenvectors:
+#+begin_src org  :noweb yes :tangle ./NASTRAN/Model8_103op2.bdf :comments no
+  <<bdf103bulk>>
+  PARAM,POST,-1
+  INCLUDE 'model8.bdf'
+  ENDDATA
+#+end_src
+
+- pch for FE matrices
+#+begin_src org  :noweb yes :tangle ./NASTRAN/Model8_103pch.bdf :comments no
+  <<bdf103bulk>>
+  PARAM,EXTOUT,DMIGPCH  
+  INCLUDE 'model8.bdf'
+  ENDDATA
+#+end_src
+
+*** Run nastran
+#+begin_src bash :session shell1  :tangle P2_runmodal.sh
+  source ./run_nastran.sh
+  cd ./NASTRAN
+  run_nastran Model8_103op2.bdf
+  move_outputs Model8_103op2.bdf
+  run_nastran Model8_103pch.bdf
+  move_outputs Model8_103pch.bdf
+  cd -
+#+end_src
+
+** Read and save FEM and FENIAX grid
+
+- Save Ka, Ma, eigenvalues and eigenvectors
+#+begin_src python
+  num_models = 8
+  eigenvalues_list = []
+  eigenvectors_list = []
+  for i in range(1, num_models + 1):
+      try:
+          op2 = op2reader.NastranReader(op2name=f"./NASTRAN/simulations_out/Model{i}_103op2.op2")
+          op2.readModel()
+          eigenvalues = op2.eigenvalues()
+          eigenvectors = op2.eigenvectors()
+          eigenvalues_list.append(eigenvalues)
+          eigenvectors_list.append(eigenvectors)
+          # if i == 5: # Model 5
+          #     v = eigenvectors.reshape((18,5*6)).T
+          # else:
+          v = eigenvectors.reshape((18,18)).T
+          np.save(f"./FEM/eigenvals_m{i}.npy", eigenvalues)
+          np.save(f"./FEM/eigenvecs_m{i}.npy", v)
+
+          id_list,stiffnessMatrix,massMatrix = matrixbuilder.read_pch(f"./NASTRAN/simulations_out/Model{i}_103pch.pch")
+          np.save(f"./FEM/Ka_m{i}.npy", stiffnessMatrix)
+          np.save(f"./FEM/Ma_m{i}.npy", massMatrix)
+      except FileNotFoundError:
+          print(f"Model {i} not run in Nastran")
+#+end_src
+
+- save Grid file
+#+begin_src python
+  model_list= [8] #range(1, num_models + 1)
+  for i in model_list:
+
+      bdf = BDF()
+      bdf.read_bdf(f"./NASTRAN/Model{i}_103op2.bdf", validate=False)
+      # if i == 5: # Model 5
+      #     components = dict(rbeam=[1,21, 22], lbeam=[31, 32])
+      # else:
+      components = dict(rbeam=[1,2], lbeam=[3])
+      model = BuildAsetModel(components, bdf)          
+      model.write_grid(f"./FEM/structuralGrid_m{i}")
+
+#+end_src
+
+#+begin_src python
+  op2 = op2reader.NastranReader(op2name=f"./NASTRAN/simulations_out/Model{7}_103op2.op2")
+  op2.readModel()
+  eigenvalues = op2.eigenvalues()
+  eigenvectors = op2.eigenvectors()
+
+  op2 = op2reader.NastranReader(op2name=f"./NASTRAN/simulations_out/Model{8}_103op2.op2")
+  op2.readModel()
+  eigenvalues2 = op2.eigenvalues()
+  eigenvectors2 = op2.eigenvectors()
+  
+#+end_src
+
+
 * FENIAX
 :PROPERTIES:
 :header-args: :tangle ./P3_settings.py :session *pyfeniax* :comments yes :results none
@@ -546,20 +642,21 @@ Set model to be run (mi), initial conditions and whether to include gravity forc
   omega_z = 0.
   gravity_forces = False
   gravity_label = "g" if gravity_forces else ""
-  label = 'm7'
+  label = 'm8'
   label_name = label + gravity_label
 #+end_src
 
 #+begin_src python :tangle no
   eigens = jnp.load(f"./FEM/eigenvecs_{label}.npy")
   eigs = jnp.load(f"./FEM/eigenvals_{label}.npy")
-  eigens2 = jnp.delete(eigens, jnp.array([8,9,10]), 1)
-  eigs2 = jnp.delete(eigs, jnp.array([8,9,10]))
-  #eigens3 = jnp.delete(eigens2, 9, 1)
-  jnp.save(f"./FEM/eigenvecsX_{label}.npy", eigens2)
-  jnp.save(f"./FEM/eigenvalsX_{label}.npy", eigs2)
+  REMOVE_AXIAL = False
+  if REMOVE_AXIAL:
+      eigens2 = jnp.delete(eigens, jnp.array([8,9,10]), 1)
+      eigs2 = jnp.delete(eigs, jnp.array([8,9,10]))
+      #eigens3 = jnp.delete(eigens2, 9, 1)
+      jnp.save(f"./FEM/eigenvecsX_{label}.npy", eigens2)
+      jnp.save(f"./FEM/eigenvalsX_{label}.npy", eigs2)
 #+end_src
-
 
 ** only-RB modes 
 #+begin_src python
