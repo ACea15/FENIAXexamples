@@ -89,15 +89,15 @@ Parameters in the problem:
       #        self.inp.I31[i][k],self.inp.I32[i][k],self.inp.I33[i][k]]
       conm21 = ['CONM2', 11, 1, 0, config.M / 2,
                 config.OFFSET_x, 0., config.OFFSET_z, None,
-                1e-5, 0., config.Im, 0., 0., 1e-5
+                1e-6, 0., config.Im, 0., 0., 1e-6
                 ]
       conm22 = ['CONM2', 12, 2, 0, config.M / 4,
                 0., 0., 0. , None,
-                1e-5, 0., 1e-5, 0., 0., 1e-5
+                1e-6, 0., 1e-6, 0., 0., 1e-6
                 ]
       conm23 = ['CONM2', 13, 3, 0, config.M / 4,
                 0., 0., 0. ,None,
-                1e-5, 0., 1e-5, 0., 0., 1e-5
+                1e-6, 0., 1e-6, 0., 0., 1e-6
                 ]
 
       mesh.add_card(conm21, 'CONM2')
@@ -110,10 +110,10 @@ Parameters in the problem:
       ############################  
       # pbeam = ['PBEAM',id_p,id_mat,Aa,I1a,I2a,I12a,Ja]
       if config.BAR:
-          pbeam = ['PBAR', 31, 21, config.A, config.I, config.I * 1e-3, config.J]
+          pbeam = ['PBAR', 31, 21, config.A, config.I*20000, config.I * 1e-3, config.J]
           mesh.add_card(pbeam, 'PBAR')
       else:
-          pbeam = ['PBEAM', 31, 21, config.A, config.I, config.I * 1e-3, 0., config.J]
+          pbeam = ['PBEAM', 31, 21, config.A, config.I*20000, config.I * 1e-3, 0., config.J]
           mesh.add_card(pbeam, 'PBEAM')
 
       ############################  
@@ -527,7 +527,7 @@ Horizontal bar, no offset
 Horizontal bar, no offset, high stiffness
 *** Create nastran files for FE extraction
 #+begin_src python
-  config1 = Config(BAR=True, A=0.05*10000)
+  config1 = Config(BAR=True, A=0.05*1e6)
   mesh1 = build_bdf(config1)
   mesh1.write_bdf("./NASTRAN/model8.bdf", size=8, is_double=False, close=True)
 #+end_src

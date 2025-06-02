@@ -25,12 +25,100 @@ omega_z = 0.
 gravity_forces = False
 gravity_label = "g" if gravity_forces else ""
 label = 'm8'
-num_modes = 13 # [8, 10]
+num_modes = 10
 
+
+
+# Inputs to FENIAX
+inp = Inputs()
+inp.log.level="error"
+inp.engine = "intrinsicmodal"
+inp.fem.connectivity = {'rbeam': None, 'lbeam': None}
+inp.fem.Ka_name = f"./FEM/Ka_{label}.npy"
+inp.fem.Ma_name = f"./FEM/Ma_{label}.npy"
+inp.fem.eig_names = [f"./FEM/eigenvals_{label}.npy",
+                     f"./FEM/eigenvecs_{label}.npy"]
+inp.fem.grid = f"./FEM/structuralGrid_{label}"
+inp.fem.num_modes = num_modes
+inp.fem.eig_type = "inputs"
+inp.driver.typeof = "intrinsic"
+inp.simulation.typeof = "single"
+config =  configuration.Config(inp)
+solmodal = feniax.feniax_main.main(input_obj=config) 
+
+# rbomega_mode = solmodal.modes.phi1[5].T*1/1.84124331e-02 + solmodal.modes.phi1[4].T*1/-2.57095762e-02
+
+class Qic:
+
+    def __init__(self, phi1):
+
+        self.phi1 = phi1
+        self._build_modes()
+        self._invert_modes()
+        
+    def _build_modes(self):
+
+        m11 = self.phi1[4][4,0]
+        m21 = self.phi1[4][2,1]
+        m31 = self.phi1[4][2,2]
+        m12 = self.phi1[5][4,0]
+        m22 = self.phi1[5][2,1]
+        m32 = self.phi1[5][2,2]
+        m13 = self.phi1[7][4,0]
+        m23 = self.phi1[7][2,1]
+        m33 = self.phi1[7][2,2]
+
+        # m11 = self.phi1[2][4,0]
+        # m21 = self.phi1[2][2,1]
+        # m31 = self.phi1[2][2,2]
+        # m12 = self.phi1[3][4,0]
+        # m22 = self.phi1[3][2,1]
+        # m32 = self.phi1[3][2,2]
+        # m13 = self.phi1[7][4,0]
+        # m23 = self.phi1[7][2,1]
+        # m33 = self.phi1[7][2,2]
+        
+        
+        self.modes = jnp.array([[m11, m12, m13],
+                                [m21, m22, m23],
+                                [m31, m32, m33]
+                                ])
+    def _invert_modes(self):
+        
+        self.Minv = jnp.linalg.inv(self.modes)
+
+    def set_q1s(self, omega, vz, arm):
+
+        velocity_ic = jnp.array([omega, -omega * arm - vz, omega * arm + vz]
+                                )
+        
+        self.q1v = self.Minv @ velocity_ic
+
+    def check_velocity(self):
+        
+        return jnp.tensordot(self.phi1, self.q1, axes=(0, 0)).T # [nodes x components]
+        
+    def get_q1(self, num_modes, omega, vz, arm =1.):
+
+        self.set_q1s(omega, vz, arm)
+        
+        self.q1 = jnp.zeros(num_modes)
+        self.q1 = self.q1.at[4].set(self.q1v[0])
+        self.q1 = self.q1.at[5].set(self.q1v[1])
+        self.q1 = self.q1.at[7].set(self.q1v[2])
+        # self.q1 = self.q1.at[2].set(self.q1v[0])
+        # self.q1 = self.q1.at[3].set(self.q1v[1])
+        # self.q1 = self.q1.at[7].set(self.q1v[2])
+           
+        return self.q1
+
+    
 # 8 modes simulation: 6RB modes  + 2 bending modes (symmetric and antysymmetric)
-# 10 modes simulation: 6RB modes + 2 bending modes + 2 roational modes in y (also symmetric and antysymmetric)
+# 10 modes simulation: 6RB modes + 2 bending modes + 2 axial modes
 
-ic = "spin" # "bending", "omega"
+mic = Qic(solmodal.modes.phi1)
+
+ic = "q1s" 
 
 # Inputs to FENIAX
 inp = Inputs()
@@ -50,7 +138,7 @@ inp.system.solution = "dynamic"
 inp.system.bc1 = 'free'
 inp.system.xloads.gravity_forces = gravity_forces
 inp.system.t1 = 2*T 
-inp.system.tn = 50001 #20000 * 20 + 1
+inp.system.tn = 200001 #20000 * 20 + 1
 inp.system.solver_library = "runge_kutta" #"diffrax" #
 inp.system.solver_function = "ode"
 inp.system.solver_settings = dict(solver_name="rk4")
@@ -58,41 +146,21 @@ inp.system.solver_settings = dict(solver_name="rk4")
 #for ni in enumerate(num_modes):
 ni=num_modes
 v0=omega_0/4  # max value of vz
-if ni==num_modes:
-    label_name = label + f"N{ni}" + gravity_label
-    inp.fem.num_modes = ni  
-    vz = [0, 0.2*v0, 0.4*v0, 0.6*v0, 0.8*v0, v0] # [0., 0.2, 0.3, 0.4, 0.5, 0.6]
-    for i, vzi in enumerate(vz):
-        label_i = label_name + f"vz{i}"
-        inp.driver.sol_path= pathlib.Path(
-            f"./results_ant{label_i}{ic}")
-        if ic == "bending":
-            inp.system.init_states = dict(q1=["nodal_prescribed",
-                                              ([[v_x, v_y, v_z, omega_x, (omega_y+vzi), omega_z],
-                                                [v_x, v_y, v_z - (omega_y) * 1 - vzi, omega_x, (omega_y-2*vzi), omega_z],
-                                                [v_x, v_y, v_z + (omega_y) * 1 + vzi, omega_x, (omega_y-2*vzi), omega_z]]
-                                               ,)
-                                              ]
-                                          )
-        elif ic == "omega":
-          inp.system.init_states = dict(q1=["nodal_prescribed",
-                                            ([[v_x, v_y, v_z, omega_x, omega_y, omega_z],
-                                              [v_x, v_y, v_z - omega_y * 1 - vzi, omega_x, omega_y, omega_z],
-                                              [v_x, v_y, v_z + omega_y * 1 + vzi, omega_x, omega_y, omega_z]]
-                                             ,)
-                                            ]
-                                        )
-        elif ic == "spin":
-          inp.system.init_states = dict(q1=["nodal_prescribed",
-                                            ([[v_x, v_y, v_z, omega_x, omega_y, omega_z],
-                                              [v_x, v_y, v_z - omega_y * 1, omega_x, omega_y, omega_z],
-                                              [v_x, v_y, v_z + omega_y * 1, omega_x, omega_y, omega_z]]
-                                             ,)
-                                            ]
-                                        )
-            
-        config =  configuration.Config(inp)
-        sol = feniax.feniax_main.main(input_obj=config) 
+label_name = label + f"N{ni}" + gravity_label
+inp.fem.num_modes = ni  
+vz = [0, 0.2*v0, 0.4*v0, 0.6*v0, 0.8*v0, v0] # [0., 0.2, 0.3, 0.4, 0.5, 0.6]
+for i, vzi in enumerate(vz):
+    label_i = label_name + f"vz{i}"
+    inp.driver.sol_path= pathlib.Path(
+        f"./results_ant{label_i}{ic}")
+    q1 = mic.get_q1(ni, omega_y, vzi)
+    inp.system.init_states = dict(q1=["prescribed",
+                                      q1.tolist()
+                                      ]
+                                      )
+
+    config =  configuration.Config(inp)
+    sol = feniax.feniax_main.main(input_obj=config) 
 
 ############################################################################################
 # Postprocessing

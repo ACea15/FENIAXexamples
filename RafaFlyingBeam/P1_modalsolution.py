@@ -131,30 +131,80 @@ mesh1.write_bdf("./NASTRAN/model7.bdf", size=8, is_double=False, close=True)
 # Create nastran files for FE extraction:1 ends here
 
 # [[file:modelgen.org::*Read and save FEM and FENIAX grid][Read and save FEM and FENIAX grid:1]]
-num_models = 5
+num_models = 7
 eigenvalues_list = []
 eigenvectors_list = []
 for i in range(1, num_models + 1):
-    op2 = op2reader.NastranReader(op2name=f"./NASTRAN/simulations_out/Model{i}_103op2.op2")
-    op2.readModel()
-    eigenvalues = op2.eigenvalues()
-    eigenvectors = op2.eigenvectors()
-    eigenvalues_list.append(eigenvalues)
-    eigenvectors_list.append(eigenvectors)
-    # if i == 5: # Model 5
-    #     v = eigenvectors.reshape((18,5*6)).T
-    # else:
-    v = eigenvectors.reshape((18,18)).T
-    np.save(f"./FEM/eigenvals_m{i}.npy", eigenvalues)
-    np.save(f"./FEM/eigenvecs_m{i}.npy", v)
+    try:
+        op2 = op2reader.NastranReader(op2name=f"./NASTRAN/simulations_out/Model{i}_103op2.op2")
+        op2.readModel()
+        eigenvalues = op2.eigenvalues()
+        eigenvectors = op2.eigenvectors()
+        eigenvalues_list.append(eigenvalues)
+        eigenvectors_list.append(eigenvectors)
+        # if i == 5: # Model 5
+        #     v = eigenvectors.reshape((18,5*6)).T
+        # else:
+        v = eigenvectors.reshape((18,18)).T
+        np.save(f"./FEM/eigenvals_m{i}.npy", eigenvalues)
+        np.save(f"./FEM/eigenvecs_m{i}.npy", v)
 
-    id_list,stiffnessMatrix,massMatrix = matrixbuilder.read_pch(f"./NASTRAN/simulations_out/Model{i}_103pch.pch")
-    np.save(f"./FEM/Ka_m{i}.npy", stiffnessMatrix)
-    np.save(f"./FEM/Ma_m{i}.npy", massMatrix)
+        id_list,stiffnessMatrix,massMatrix = matrixbuilder.read_pch(f"./NASTRAN/simulations_out/Model{i}_103pch.pch")
+        np.save(f"./FEM/Ka_m{i}.npy", stiffnessMatrix)
+        np.save(f"./FEM/Ma_m{i}.npy", massMatrix)
+    except FileNotFoundError:
+        print(f"Model {i} not run in Nastran")
 # Read and save FEM and FENIAX grid:1 ends here
 
 # [[file:modelgen.org::*Read and save FEM and FENIAX grid][Read and save FEM and FENIAX grid:2]]
+model_list= [7] #range(1, num_models + 1)
+for i in model_list:
+
+    bdf = BDF()
+    bdf.read_bdf(f"./NASTRAN/Model{i}_103op2.bdf", validate=False)
+    # if i == 5: # Model 5
+    #     components = dict(rbeam=[1,21, 22], lbeam=[31, 32])
+    # else:
+    components = dict(rbeam=[1,2], lbeam=[3])
+    model = BuildAsetModel(components, bdf)          
+    model.write_grid(f"./FEM/structuralGrid_m{i}")
+# Read and save FEM and FENIAX grid:2 ends here
+
+# [[file:modelgen.org::*Create nastran files for FE extraction][Create nastran files for FE extraction:1]]
+config1 = Config(BAR=True, A=0.05*10)
+mesh1 = build_bdf(config1)
+mesh1.write_bdf("./NASTRAN/model8.bdf", size=8, is_double=False, close=True)
+# Create nastran files for FE extraction:1 ends here
+
+# [[file:modelgen.org::*Read and save FEM and FENIAX grid][Read and save FEM and FENIAX grid:1]]
+num_models = 7
+eigenvalues_list = []
+eigenvectors_list = []
 for i in range(1, num_models + 1):
+    try:
+        op2 = op2reader.NastranReader(op2name=f"./NASTRAN/simulations_out/Model{i}_103op2.op2")
+        op2.readModel()
+        eigenvalues = op2.eigenvalues()
+        eigenvectors = op2.eigenvectors()
+        eigenvalues_list.append(eigenvalues)
+        eigenvectors_list.append(eigenvectors)
+        # if i == 5: # Model 5
+        #     v = eigenvectors.reshape((18,5*6)).T
+        # else:
+        v = eigenvectors.reshape((18,18)).T
+        np.save(f"./FEM/eigenvals_m{i}.npy", eigenvalues)
+        np.save(f"./FEM/eigenvecs_m{i}.npy", v)
+
+        id_list,stiffnessMatrix,massMatrix = matrixbuilder.read_pch(f"./NASTRAN/simulations_out/Model{i}_103pch.pch")
+        np.save(f"./FEM/Ka_m{i}.npy", stiffnessMatrix)
+        np.save(f"./FEM/Ma_m{i}.npy", massMatrix)
+    except FileNotFoundError:
+        print(f"Model {i} not run in Nastran")
+# Read and save FEM and FENIAX grid:1 ends here
+
+# [[file:modelgen.org::*Read and save FEM and FENIAX grid][Read and save FEM and FENIAX grid:2]]
+model_list= [7] #range(1, num_models + 1)
+for i in model_list:
 
     bdf = BDF()
     bdf.read_bdf(f"./NASTRAN/Model{i}_103op2.bdf", validate=False)
