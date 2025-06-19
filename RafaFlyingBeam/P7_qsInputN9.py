@@ -24,14 +24,14 @@ omega_z = 0.
 # Options
 gravity_forces = False
 gravity_label = "g" if gravity_forces else ""
-label = 'm8'
+label = 'm9'
 num_modes = 10
-
+nonlinear_label = 2
 
 
 # Inputs to FENIAX
 inp = Inputs()
-inp.log.level="error"
+#inp.log.level="error"
 inp.engine = "intrinsicmodal"
 inp.fem.connectivity = {'rbeam': None, 'lbeam': None}
 inp.fem.Ka_name = f"./FEM/Ka_{label}.npy"
@@ -59,14 +59,14 @@ class Qic:
     def _build_modes(self):
 
         m11 = self.phi1[4][4,0]
-        m21 = self.phi1[4][2,1]
-        m31 = self.phi1[4][2,2]
+        m21 = self.phi1[4][2,10]
+        m31 = self.phi1[4][2,20]
         m12 = self.phi1[5][4,0]
-        m22 = self.phi1[5][2,1]
-        m32 = self.phi1[5][2,2]
+        m22 = self.phi1[5][2,10]
+        m32 = self.phi1[5][2,20]
         m13 = self.phi1[7][4,0]
-        m23 = self.phi1[7][2,1]
-        m33 = self.phi1[7][2,2]
+        m23 = self.phi1[7][2,10]
+        m33 = self.phi1[7][2,20]
 
         # m11 = self.phi1[2][4,0]
         # m21 = self.phi1[2][2,1]
@@ -122,7 +122,7 @@ ic = "q1s"
 
 # Inputs to FENIAX
 inp = Inputs()
-inp.log.level="error"
+#inp.log.level="error"
 inp.engine = "intrinsicmodal"
 inp.fem.connectivity = {'rbeam': None, 'lbeam': None}
 inp.fem.Ka_name = f"./FEM/Ka_{label}.npy"
@@ -136,6 +136,7 @@ inp.simulation.typeof = "single"
 inp.system.name = "s1"
 inp.system.solution = "dynamic"
 inp.system.bc1 = 'free'
+inp.system.nonlinear = nonlinear_label
 inp.system.xloads.gravity_forces = gravity_forces
 inp.system.t1 = 2*T
 inp.system.tn = 200001 #20000 * 20 + 1
@@ -152,7 +153,7 @@ vz = [0, 0.2*v0, 0.4*v0, 0.6*v0, 0.8*v0, v0] # [0., 0.2, 0.3, 0.4, 0.5, 0.6]
 for i, vzi in enumerate(vz):
     label_i = label_name + f"vz{i}"
     inp.driver.sol_path= pathlib.Path(
-        f"./results_ant{label_i}{ic}")
+        f"./results{nonlinear_label}_ant{label_i}{ic}")
     q1 = mic.get_q1(ni, omega_y, vzi)
     inp.system.init_states = dict(q1=["prescribed",
                                       q1.tolist()
@@ -272,28 +273,28 @@ fig = plot_multiple_2d([x1/T,x2/T,x3/T,x4/T,x5/T],
                        [y1/(omega_0/4), y2/(omega_0/4),y3/(omega_0/4),y4/(omega_0/4),y5/(omega_0/4)], 
                         #ylim=[0.9,2],
                         line_styles=['-','--','--','-'],
-                        filename='img/rotvel.png')
+                        filename='img/rotvel2.png')
 
 
 
 # Plot inertial velocity of node 1 in material frame.
 x1, y1 = putils.pickIntrinsic2D(results[f"ant{label}N{num_modes}vz1{ic}"].data.dynamicsystem_s1.t,
                                 results[f"ant{label}N{num_modes}vz1{ic}"].data.dynamicsystem_s1.X1,
-                                fixaxis2=dict(node=1, dim=2)) 
+                                fixaxis2=dict(node=10, dim=2)) 
 x2, y2 = putils.pickIntrinsic2D(results[f"ant{label}N{num_modes}vz2{ic}"].data.dynamicsystem_s1.t,
                                 results[f"ant{label}N{num_modes}vz2{ic}"].data.dynamicsystem_s1.X1,
-                                fixaxis2=dict(node=1, dim=2)) 
+                                fixaxis2=dict(node=10, dim=2)) 
 x3, y3 = putils.pickIntrinsic2D(results[f"ant{label}N{num_modes}vz3{ic}"].data.dynamicsystem_s1.t,
                                 results[f"ant{label}N{num_modes}vz3{ic}"].data.dynamicsystem_s1.X1,
-                                fixaxis2=dict(node=1, dim=2)) 
+                                fixaxis2=dict(node=10, dim=2)) 
 x4, y4 = putils.pickIntrinsic2D(results[f"ant{label}N{num_modes}vz4{ic}"].data.dynamicsystem_s1.t,
                                 results[f"ant{label}N{num_modes}vz4{ic}"].data.dynamicsystem_s1.X1,
-                                fixaxis2=dict(node=1, dim=2))
+                                fixaxis2=dict(node=10, dim=2))
 x5, y5 = putils.pickIntrinsic2D(results[f"ant{label}N{num_modes}vz5{ic}"].data.dynamicsystem_s1.t,
                                 results[f"ant{label}N{num_modes}vz5{ic}"].data.dynamicsystem_s1.X1,
-                                fixaxis2=dict(node=1, dim=2))
+                                fixaxis2=dict(node=10, dim=2))
 fig = plot_multiple_2d([x1/T,x2/T,x3/T,x4/T,x5/T], 
                        [y1,y2,y3,y4,y5], 
                         ylim=[-2., 2.],
                         line_styles=['-','--','--','-'],
-                        filename='img/tipvel.png')
+                        filename='img/tipvel2.png')
