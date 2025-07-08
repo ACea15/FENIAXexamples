@@ -97,8 +97,8 @@ inp.system.ad = dict(inputs=dict(eigenvals=inp.fem.eig_names[0],
                                  Ma=inp.fem.Ma_name),
                      input_type="fem",
                      grad_type="jacrev", #"jacrev", #value
-                     objective_fun="pmax",
-                     objective_var="X2",
+                     objective_fun="pmean",
+                     objective_var="ra",
                      objective_args=dict(nodes=(13,), components=(0,1,2,3,4,5))
                      )
 

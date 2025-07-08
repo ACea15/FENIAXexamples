@@ -77,24 +77,30 @@ inputflow = dict(length=np.linspace(25,265,2),
                  intensity=np.linspace(0.1, 3, 2),
                  rho_inf = np.linspace(0.34,0.48,2)
                )
+inputflow = dict(length=np.linspace(50,200,16),
+                 intensity=np.linspace(0.1, 3, 2),
+                 rho_inf = [rho_inf] #np.linspace(0.34,0.48,1)
+                 )
+
 inp.system.operationalmode = "shardmap"
 inp.system.shard = dict(input_type="gust1",
-                        inputs=inputflow)
-
+                        inputs=inputflow
+                        )
 
 node = 5
 inp.forager.typeof = "shard2adgust"
 inp.forager.settings.gathersystem_name = "s1"
 inp.forager.settings.scattersystems_name = "scatter"
-inp.forager.settings.ad = dict(inputs=dict(length = 67.,
-                                 intensity = 14.0732311562*2,
-                                 u_inf=200.,
-                                 rho_inf = 1.225),
+inp.forager.settings.ad = dict(inputs=dict(length = None,
+                                           intensity = None,
+                                           u_inf=u_inf,
+                                           rho_inf = None),
                                input_type="gust1",
                                grad_type="jacrev",
                                objective_fun="max",
                                objective_var="X2",
-                               objective_args=dict(nodes=(node,), components=(0,1,2,3,4,5))
+                               objective_args=dict(nodes=(node,),
+                                                   components=(0,1,2,3,4,5))
                                )
 
 
