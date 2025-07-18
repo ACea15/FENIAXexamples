@@ -99,13 +99,11 @@ inp.system.ad = dict(inputs=dict(eigenvals=inp.fem.eig_names[0],
                      grad_type="jacrev", #"jacrev", #value
                      objective_fun="pmean",
                      objective_var="ra",
-                     objective_args=dict(nodes=(13,), components=(0,1,2,3,4,5))
+                     objective_args=dict(nodes=(13,), components=(0,1),
+                                         t=(inp.system.t[-1],))
                      )
 
-t1 = time.time()
 sol1 = feniax.feniax_shardmain.main(input_dict=inp, device_count=8)
-t2 = time.time()
-print(f"Time DiscreteLoads MC: {t2 - t1}")
 
 # np.mean(sol.staticsystem_sys1.ra[:,-1,2,35])
 # np.std(sol.staticsystem_sys1.ra[:,-1,2,35])
