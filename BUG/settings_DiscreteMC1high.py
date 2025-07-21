@@ -12,10 +12,10 @@ if len(sys.argv) > 1:
 else:
     results_path = "./results/"
 
-
-
 sol = "cao"
+paths = 8*200
 num_modes = 100
+device_count = 1
 inp = Inputs()
 inp.engine = "intrinsicmodal"
 inp.fem.eig_type = "inputs"
@@ -42,8 +42,9 @@ inp.fem.eig_names = [f"./FEM/eigenvals_{sol}{num_modes}.npy",
                      f"./FEM/eigenvecs_{sol}{num_modes}.npy"]
 inp.driver.typeof = "intrinsic"
 inp.fem.num_modes = num_modes
+
 inp.driver.sol_path = pathlib.Path(
-    f"{results_path}/ShardingMC_AD2")
+    f"{results_path}/DiscreteMC1high")
 
 inp.simulation.typeof = "single"
 inp.system.name = "s1"
@@ -77,7 +78,6 @@ for i, _ in enumerate(range(len(points))):
         interpolation.append(_interpolation_torsion)
 
 interpolation = np.array(interpolation)  # num_pointforces x num_interpolation  
-paths = 8*4 #200
 sigma0 = 0.15  # percentage of mu for sigma
 mu = _interpolation[-1]
 sigma = (sigma0) * _interpolation[-1]
@@ -96,19 +96,11 @@ follower_points = [points]*paths
 inputforces = dict(follower_points=follower_points,
                    follower_interpolation=follower_interpolation
                    )
-#inp.system.operationalmode = "shardmap"
 inp.system.shard = dict(input_type="pointforces",
                         inputs=inputforces)
-inp.system.ad = dict(inputs=dict(eigenvals=inp.fem.eig_names[0],
-                                 eigenvecs=inp.fem.eig_names[1],
-                                 Ka=inp.fem.Ka_name,
-                                 Ma=inp.fem.Ma_name),
-                     input_type="fem",
-                     grad_type="jacrev", #"jacrev", #value
-                     objective_fun="pmean",
-                     objective_var="X2",
-                     objective_args=dict(nodes=(13,), components=(0,1),
-                                         t=(inp.system.t[-1],))
-                     )
 
-sol1 = feniax.feniax_shardmain.main(input_dict=inp, device_count=8)
+sol1 = feniax.feniax_shardmain.main(input_dict=inp, device_count=device_count)
+
+# np.mean(sol.staticsystem_sys1.ra[:,-1,2,35])
+# np.std(sol.staticsystem_sys1.ra[:,-1,2,35])
+# High loading:1 ends here

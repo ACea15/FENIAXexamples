@@ -1,4 +1,4 @@
-# [[file:modelgeneration.org::*High loading][High loading:1]]
+# [[file:modelgeneration.org::*Very Small loading][Very Small loading:1]]
 import pathlib
 import time
 #import jax.numpy as jnp
@@ -12,10 +12,7 @@ if len(sys.argv) > 1:
 else:
     results_path = "./results/"
 
-
-
 sol = "cao"
-num_modes = 100
 inp = Inputs()
 inp.engine = "intrinsicmodal"
 inp.fem.eig_type = "inputs"
@@ -42,9 +39,9 @@ inp.fem.eig_names = [f"./FEM/eigenvals_{sol}{num_modes}.npy",
                      f"./FEM/eigenvecs_{sol}{num_modes}.npy"]
 inp.driver.typeof = "intrinsic"
 inp.fem.num_modes = num_modes
-inp.driver.sol_path = pathlib.Path(
-    f"{results_path}/ShardingMC_AD2")
 
+inp.driver.sol_path = pathlib.Path(
+     f"{results_path}/DiscreteMC1vsmall")
 inp.simulation.typeof = "single"
 inp.system.name = "s1"
 inp.system.solution = "static"
@@ -62,8 +59,9 @@ inp.system.t = [1, 2, 3, 4, 5]
 # lwing: 40-61
 points = []
 interpolation = []
-_interpolation = [0., 3.e3, 7e3, 9e3, 1e4, 1.5e4] # 1.5e4, 2e4..4e4] #[0., 0., 0., 0.]
-_interpolation_torsion = [i*2 for i in _interpolation] #[0., 4e3, 1e4, 2e4, 4e4, 5e4] 
+_interpolationverysmall = [i*1e-3 for i in _interpolation] 
+_interpolationverysmall_torsion = [i*1e-3 for i in _interpolation_torsion]   
+
 for ri,li in zip(range(14, 36),range(40,62)):
     points.append([ri, 2])
     points.append([ri, 4])
@@ -72,18 +70,17 @@ for ri,li in zip(range(14, 36),range(40,62)):
 for i, _ in enumerate(range(len(points))):
 
     if i % 2 == 0:
-        interpolation.append(_interpolation)
+        interpolation.append(_interpolationverysmall)
     else:
-        interpolation.append(_interpolation_torsion)
+        interpolation.append(_interpolationverysmall_torsion)
 
-interpolation = np.array(interpolation)  # num_pointforces x num_interpolation  
-paths = 8*4 #200
+interpolation = np.array(interpolation)  # num_pointforces x num_interpolationverysmall  
 sigma0 = 0.15  # percentage of mu for sigma
-mu = _interpolation[-1]
-sigma = (sigma0) * _interpolation[-1]
+mu = _interpolationverysmall[-1]
+sigma = (sigma0) * _interpolationverysmall[-1]
 rand = np.random.normal(mu, sigma, paths)
-mu_torsion = _interpolation_torsion[-1]
-sigma_torsion = (sigma0) * _interpolation_torsion[-1]
+mu_torsion = _interpolationverysmall_torsion[-1]
+sigma_torsion = (sigma0) * _interpolationverysmall_torsion[-1]
 rand_torsion = np.random.normal(mu_torsion, sigma_torsion, paths)
 follower_interpolation = []
 for i, ri in enumerate(rand):
@@ -96,19 +93,13 @@ follower_points = [points]*paths
 inputforces = dict(follower_points=follower_points,
                    follower_interpolation=follower_interpolation
                    )
-#inp.system.operationalmode = "shardmap"
 inp.system.shard = dict(input_type="pointforces",
                         inputs=inputforces)
-inp.system.ad = dict(inputs=dict(eigenvals=inp.fem.eig_names[0],
-                                 eigenvecs=inp.fem.eig_names[1],
-                                 Ka=inp.fem.Ka_name,
-                                 Ma=inp.fem.Ma_name),
-                     input_type="fem",
-                     grad_type="jacrev", #"jacrev", #value
-                     objective_fun="pmean",
-                     objective_var="X2",
-                     objective_args=dict(nodes=(13,), components=(0,1),
-                                         t=(inp.system.t[-1],))
-                     )
+t1 = time.time()
+sol3 = feniax.feniax_shardmain.main(input_dict=inp, device_count=device_count)
+t2 = time.time()
+print(f"Time DiscreteLoads MC: {t2 - t1}")
 
-sol1 = feniax.feniax_shardmain.main(input_dict=inp, device_count=8)
+ # np.mean(sol.staticsystem_sys1.ra[:,-1,2,35])
+ # np.std(sol.staticsystem_sys1.ra[:,-1,2,35])
+# Very Small loading:1 ends here

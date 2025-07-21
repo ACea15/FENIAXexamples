@@ -5,6 +5,14 @@ import time
 import numpy as np
 from feniax.preprocessor.inputs import Inputs
 import feniax.feniax_shardmain
+import sys
+
+if len(sys.argv) > 1:
+    results_path = f"{sys.argv[1]}/results/"
+else:
+    results_path = "./results/"
+
+
 label_dlm = "d1c7"
 sol = "eao"
 label_gaf = "Dd1c7F3Seao-100"
@@ -70,7 +78,8 @@ inp.system.aero.gust.panels_dihedral = f"./AERO/Dihedral_{label_dlm}.npy"
 inp.system.aero.gust.collocation_points = f"./AERO/Collocation_{label_dlm}.npy"
 
 inp.driver.sol_path = pathlib.Path(
-    f"./results/gust2_{sol}Shard")
+    f"{results_path}/gust_forager")
+
 inp.system.aero.gust.fixed_discretisation = [150, u_inf]
 # Shard inputs
 inputflow = dict(length=np.linspace(25,265,2),
@@ -87,7 +96,8 @@ inp.system.shard = dict(input_type="gust1",
                         inputs=inputflow
                         )
 
-node = 5
+node = 12
+components = (2,3,4) # shear, torsion, oop bending
 inp.forager.typeof = "shard2adgust"
 inp.forager.settings.gathersystem_name = "s1"
 inp.forager.settings.scattersystems_name = "scatter"
@@ -100,10 +110,111 @@ inp.forager.settings.ad = dict(inputs=dict(length = None,
                                objective_fun="max",
                                objective_var="X2",
                                objective_args=dict(nodes=(node,),
-                                                   components=(0,1,2,3,4,5))
+                                                   components=components)
                                )
 
 
 num_gpus = 8
 solgust21shard = feniax.feniax_shardmain.main(input_dict=inp, device_count=num_gpus)
 # Gust:2 ends here
+
+
+def validation_max():
+
+    import jax.numpy as jnp
+
+    # for component 2:
+    ci = 2
+    field_i = solgust21shard.dynamicsystem_s1.X2[:,:,ci,node]
+    field_ivalue = jnp.max(field_i)
+    argmax = jnp.argmax(field_i)
+    index = jnp.unravel_index(argmax,
+                              field_i.shape) # get max index in field_i shape
+    assert solgust21shard.forager_shard2adgust.filtered_map[(node,ci)] == index
+    # for component 3:
+    ci = 3
+    field_i = solgust21shard.dynamicsystem_s1.X2[:,:,ci,node]
+    field_ivalue = jnp.max(field_i)
+    argmax = jnp.argmax(field_i)
+    index = jnp.unravel_index(argmax,
+                              field_i.shape) # get max index in field_i shape
+    assert solgust21shard.forager_shard2adgust.filtered_map[(node,ci)] == index
+
+    # for component 4:
+    ci = 4
+    field_i = solgust21shard.dynamicsystem_s1.X2[:,:,ci,node]
+    field_ivalue = jnp.max(field_i)
+    argmax = jnp.argmax(field_i)
+    index = jnp.unravel_index(argmax,
+                              field_i.shape) # get max index in field_i shape
+    assert solgust21shard.forager_shard2adgust.filtered_map[(node,ci)] == index
+    
+    
+def validation_ad():
+    import feniax.feniax_main
+    import jax.numpy as jnp
+    import feniax.intrinsic.objectives as objectives
+    
+    inp.system.operationalmode = ""
+    inp.system.shard = None
+    inp.forager = None
+    t_range = jnp.arange(inp.system.tn)
+    index_i = list(solgust21shard.forager_shard2adgust.filtered_indexes)[0]
+    rho, uinf, length, intensity = solgust21shard.shards_s1.points[index_i]
+    inp.system.aero.rho_inf = rho 
+    inp.system.aero.u_inf = uinf
+    inp.system.aero.gust.length = length
+    inp.system.aero.gust.intensity = intensity
+    inp.driver.sol_path = pathlib.Path(
+        f"{results_path}/gustforager_validation")
+    
+    sol = feniax.feniax_main.main(input_dict=inp)
+    epsilon = 1e-3
+    inp.system.aero.rho_inf += epsilon
+    inp.driver.sol_path = pathlib.Path(
+        f"{results_path}/gustforager_epsilonrho")
+    sol_rho = feniax.feniax_main.main(input_dict=inp)
+    jac_rho = (objectives.X2_MAX(sol_rho.dynamicsystem_s1.X2,
+                                 jnp.array([node]),
+                                 jnp.array(components),
+                                 t_range) -
+               objectives.X2_MAX(sol.dynamicsystem_s1.X2,
+                                 jnp.array([node]),
+                                 jnp.array(components),
+                                 t_range)
+               ) / epsilon
+    ##########
+    inp.system.aero.rho_inf = rho
+    inp.system.aero.gust.length += epsilon
+    inp.driver.sol_path = pathlib.Path(
+        f"{results_path}/gustforager_epsilonlength")
+    sol_length = feniax.feniax_main.main(input_dict=inp)
+    jac_length = (objectives.X2_MAX(sol_length.dynamicsystem_s1.X2,
+                                 jnp.array([node]),
+                                 jnp.array(components),
+                                 t_range) -
+                  objectives.X2_MAX(sol.dynamicsystem_s1.X2,
+                                    jnp.array([node]),
+                                    jnp.array(components),
+                                    t_range)
+                  ) / epsilon
+    ############
+    inp.system.aero.gust.length = length
+    inp.system.aero.gust.intensity += epsilon
+    inp.driver.sol_path = pathlib.Path(
+        f"{results_path}/gustforager_epsilonintensity")
+    sol_intensity = feniax.feniax_main.main(input_dict=inp)
+    jac_intensity = (objectives.X2_MAX(sol_intensity.dynamicsystem_s1.X2,
+                                       jnp.array([node]),
+                                       jnp.array(components),
+                                       t_range) -
+                     objectives.X2_MAX(sol.dynamicsystem_s1.X2,
+                                       jnp.array([node]),
+                                       jnp.array(components),
+                                       t_range)
+               ) / epsilon
+    
+    return jac_rho, jac_length, jac_intensity
+
+validation_max()
+jac_rho, jac_length, jac_intensity = validation_ad()
