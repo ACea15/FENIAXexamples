@@ -1,4 +1,4 @@
-# [[file:modelgeneration.org::*Small loading][Small loading:1]]
+# [[file:modelgeneration.org::*AD_t][AD_t:1]]
 import pathlib
 import time
 #import jax.numpy as jnp
@@ -96,15 +96,25 @@ def external_forces(_interpolation, paths):
 _interpolation = [0., 3.e3, 7e3, 9e3, 1e4, 1.5e4]
 paths = 8 * 40#200
 
+paths = [8, 80, 4e2, 8e2, 4e3]
+for i, pi in enumerate(paths):
+    follower_points, follower_interpolation = external_forces(_interpolation, int(pi))
+    inputforces = dict(follower_points=follower_points,
+                       follower_interpolation=follower_interpolation
+                       )
+    inp.system.shard = dict(input_type="pointforces",
+                            inputs=inputforces)
 
-_interpolation = [it * 1e-2 for it in _interpolation]
-follower_points, follower_interpolation = external_forces(_interpolation, paths)
-inputforces = dict(follower_points=follower_points,
-                   follower_interpolation=follower_interpolation
-                   )
-inp.system.shard = dict(input_type="pointforces",
-                        inputs=inputforces)
-inp.driver.sol_path = pathlib.Path(
-    f"{results_path}/DiscreteMC1small")
-sol2 = feniax.feniax_shardmain.main(input_dict=inp, device_count=device_count)
-# Small loading:1 ends here
+    inp.driver.sol_path = pathlib.Path(
+        f"{results_path}/ADDiscreteMC1_tjac{i}")
+    inp.system.ad = dict(inputs=dict(t = 5.5),
+                         input_type="point_forces",
+                         grad_type="value", #"jacrev", #value
+                         objective_fun="pmean",
+                         objective_var="ra",
+                         objective_args=dict(nodes=(35,), components=(0,1,2,3,4,5),
+                                             t=(inp.system.t[-1],))
+                         )
+
+    sol4j = feniax.feniax_shardmain.main(input_dict=inp, device_count=device_count)
+# AD_t:1 ends here

@@ -1,4 +1,4 @@
-# [[file:modelgeneration.org::*Gust][Gust:2]]
+# [[file:modelgeneration.org::*Forager][Forager:1]]
 import pathlib
 import time
 #import jax.numpy as jnp
@@ -12,10 +12,9 @@ if len(sys.argv) > 1:
 else:
     results_path = "./results/"
 
-
 label_dlm = "d1c7"
-sol = "eao"
-label_gaf = "Dd1c7F3Seao-100"
+sol = "cao"
+label_gaf = "Dd1c7F3Scao-100"
 num_modes = 100
 c_ref = 3.0
 u_inf = 209.62786434059765
@@ -50,14 +49,14 @@ inp.fem.eig_names = [f"./FEM/eigenvals_{sol}{num_modes}.npy",
                      f"./FEM/eigenvecs_{sol}{num_modes}.npy"]
 inp.driver.typeof = "intrinsic"
 inp.fem.num_modes = num_modes
-inp.driver.typeof = "intrinsic"
+
 inp.simulation.typeof = "single"
 inp.system.name = "s1"
 if sol[0] == "e": # free model, otherwise clamped
     inp.system.bc1 = 'free'
     inp.system.q0treatment = 1
 inp.system.solution = "dynamic"
-inp.system.t1 = 2
+inp.system.t1 = 1.
 inp.system.tn = 2501
 inp.system.solver_library = "runge_kutta"
 inp.system.solver_function = "ode"
@@ -70,32 +69,23 @@ inp.system.aero.poles = f"./AERO/{Poles_file}.npy"
 inp.system.aero.A = f"./AERO/{Ahh_file}.npy"
 inp.system.aero.D = f"./AERO/{Dhj_file}.npy"
 inp.system.aero.gust_profile = "mc"
-inp.system.aero.gust.intensity = 20
-inp.system.aero.gust.length = 150.
+inp.system.aero.gust.intensity = 30 #25
+inp.system.aero.gust.length = 200. #150.
 inp.system.aero.gust.step = 0.1
 inp.system.aero.gust.shift = 0.
 inp.system.aero.gust.panels_dihedral = f"./AERO/Dihedral_{label_dlm}.npy"
 inp.system.aero.gust.collocation_points = f"./AERO/Collocation_{label_dlm}.npy"
 
 inp.driver.sol_path = pathlib.Path(
-    f"{results_path}/gust_forager")
-
+    f"{results_path}/gustforager")
 inp.system.aero.gust.fixed_discretisation = [150, u_inf]
 # Shard inputs
-inputflow = dict(length=np.linspace(25,265,2),
-                 intensity=np.linspace(0.1, 3, 2),
-                 rho_inf = np.linspace(0.34,0.48,2)
+inputflow = dict(length=np.linspace(25,265,13),
+                 intensity=np.linspace(0.1, 3, 11),
+                 rho_inf = np.linspace(0.34,0.48,8)
                )
-inputflow = dict(length=np.linspace(50,200,16),
-                 intensity=np.linspace(0.1, 3, 2),
-                 rho_inf = [rho_inf] #np.linspace(0.34,0.48,1)
-                 )
-
-inp.system.operationalmode = "shardmap"
 inp.system.shard = dict(input_type="gust1",
-                        inputs=inputflow
-                        )
-
+                        inputs=inputflow)
 node = 12
 components = (2,3,4) # shear, torsion, oop bending
 inp.forager.typeof = "shard2adgust"
@@ -113,11 +103,8 @@ inp.forager.settings.ad = dict(inputs=dict(length = None,
                                                    components=components)
                                )
 
-
 num_gpus = 8
-solgust21shard = feniax.feniax_shardmain.main(input_dict=inp, device_count=num_gpus)
-# Gust:2 ends here
-
+solforager = feniax.feniax_shardmain.main(input_dict=inp, device_count=num_gpus)
 
 def validation_max():
 
@@ -125,49 +112,51 @@ def validation_max():
 
     # for component 2:
     ci = 2
-    field_i = solgust21shard.dynamicsystem_s1.X2[:,:,ci,node]
+    field_i = jnp.abs(solforager.dynamicsystem_s1.X2[:,:,ci,node])
     field_ivalue = jnp.max(field_i)
     argmax = jnp.argmax(field_i)
     index = jnp.unravel_index(argmax,
                               field_i.shape) # get max index in field_i shape
-    assert solgust21shard.forager_shard2adgust.filtered_map[(node,ci)] == index
+    assert solforager.forager_shard2adgust.filtered_map[(node,ci)] == index
     # for component 3:
     ci = 3
-    field_i = solgust21shard.dynamicsystem_s1.X2[:,:,ci,node]
+    field_i = jnp.abs(solforager.dynamicsystem_s1.X2[:,:,ci,node])
     field_ivalue = jnp.max(field_i)
     argmax = jnp.argmax(field_i)
     index = jnp.unravel_index(argmax,
                               field_i.shape) # get max index in field_i shape
-    assert solgust21shard.forager_shard2adgust.filtered_map[(node,ci)] == index
+    assert solforager.forager_shard2adgust.filtered_map[(node,ci)] == index
 
     # for component 4:
     ci = 4
-    field_i = solgust21shard.dynamicsystem_s1.X2[:,:,ci,node]
+    field_i = jnp.abs(solforager.dynamicsystem_s1.X2[:,:,ci,node])
     field_ivalue = jnp.max(field_i)
     argmax = jnp.argmax(field_i)
     index = jnp.unravel_index(argmax,
                               field_i.shape) # get max index in field_i shape
-    assert solgust21shard.forager_shard2adgust.filtered_map[(node,ci)] == index
-    
-    
+    assert solforager.forager_shard2adgust.filtered_map[(node,ci)] == index
+
 def validation_ad():
+    """
+    Only run the gust of the first problematic gust case to compare FD
+    """
     import feniax.feniax_main
     import jax.numpy as jnp
     import feniax.intrinsic.objectives as objectives
-    
+
     inp.system.operationalmode = ""
     inp.system.shard = None
     inp.forager = None
     t_range = jnp.arange(inp.system.tn)
-    index_i = list(solgust21shard.forager_shard2adgust.filtered_indexes)[0]
-    rho, uinf, length, intensity = solgust21shard.shards_s1.points[index_i]
+    index_i = list(solforager.forager_shard2adgust.filtered_indexes)[0]
+    rho, uinf, length, intensity = solforager.shards_s1.points[index_i]
     inp.system.aero.rho_inf = rho 
     inp.system.aero.u_inf = uinf
     inp.system.aero.gust.length = length
     inp.system.aero.gust.intensity = intensity
     inp.driver.sol_path = pathlib.Path(
         f"{results_path}/gustforager_validation")
-    
+
     sol = feniax.feniax_main.main(input_dict=inp)
     epsilon = 1e-3
     inp.system.aero.rho_inf += epsilon
@@ -213,8 +202,9 @@ def validation_ad():
                                        jnp.array(components),
                                        t_range)
                ) / epsilon
-    
+
     return jac_rho, jac_length, jac_intensity
 
 validation_max()
 jac_rho, jac_length, jac_intensity = validation_ad()
+# Forager:1 ends here

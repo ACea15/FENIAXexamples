@@ -1,4 +1,4 @@
-# [[file:modelgeneration.org::*Small loading][Small loading:1]]
+# [[file:modelgeneration.org::*AD_t][AD_t:1]]
 import pathlib
 import time
 #import jax.numpy as jnp
@@ -97,14 +97,25 @@ _interpolation = [0., 3.e3, 7e3, 9e3, 1e4, 1.5e4]
 paths = 8 * 40#200
 
 
-_interpolation = [it * 1e-2 for it in _interpolation]
 follower_points, follower_interpolation = external_forces(_interpolation, paths)
 inputforces = dict(follower_points=follower_points,
                    follower_interpolation=follower_interpolation
                    )
 inp.system.shard = dict(input_type="pointforces",
                         inputs=inputforces)
-inp.driver.sol_path = pathlib.Path(
-    f"{results_path}/DiscreteMC1small")
-sol2 = feniax.feniax_shardmain.main(input_dict=inp, device_count=device_count)
-# Small loading:1 ends here
+
+epsilons = [1e-1, 1e-2, 1e-3, 1e-4, 1e-5]
+for i, ei in enumerate(epsilons):
+    inp.driver.sol_path = pathlib.Path(
+        f"{results_path}/ADDiscreteMC1_te{i}")
+    inp.system.ad = dict(inputs=dict(t = 5.5 + ei),
+                         input_type="point_forces",
+                         grad_type="value", #"jacrev", #value
+                         objective_fun="pmean",
+                         objective_var="ra",
+                         objective_args=dict(nodes=(35,), components=(0,1,2,3,4,5),
+                                             t=(inp.system.t[-1],))
+                         )
+
+    sol4e = feniax.feniax_shardmain.main(input_dict=inp, device_count=device_count)
+# AD_t:1 ends here
