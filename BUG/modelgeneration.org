@@ -1393,7 +1393,7 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
   from feniax.utils import standard_atmosphere
   import pickle
   import itertools
-  sol = "cao"
+  sol = "eao"
   num_modes = 100
   mach = 0.7
   altitude = 10000 # meters
@@ -2787,15 +2787,16 @@ make gust video
 - Compare against FD
 #+begin_src python :tangle settings_ADDiscreteMC1_t.py :session *pyshard4* :noweb yes 
   <<DiscreteMC1high>>
+  inp.system.t = [1, 2, 3, 4] # reduced to 4, to then compute 4.5
   inp.driver.sol_path = pathlib.Path(
        f"{results_path}/ADDiscreteMC1_t")
-  inp.system.ad = dict(inputs=dict(t = 5.5),
+  inp.system.ad = dict(inputs=dict(t = 4.5),
                        input_type="point_forces",
                        grad_type="jacrev", #"jacrev", #value
                        objective_fun="pmean",
                        objective_var="ra",
                        objective_args=dict(nodes=(35,), components=(0,1,2,3,4,5),
-                                           t=(inp.system.t[-1],))
+                                           t=(4,))
                        )
 
   sol4 = feniax.feniax_shardmain.main(input_dict=inp, device_count=device_count)
@@ -2805,17 +2806,18 @@ make gust video
 - Run with epsilons for finite-difference, note: no AD being run, just value
 #+begin_src python :tangle settings_ADDiscreteMC1_t_fd.py :session *pyshard4*
   <<DiscreteMC1high>>
+  inp.system.t = [1, 2, 3, 4] # reduced to 4, to then compute 4.5  
   epsilons = [1e-1, 1e-2, 1e-3, 1e-4, 1e-5]
   for i, ei in enumerate(epsilons):
       inp.driver.sol_path = pathlib.Path(
           f"{results_path}/ADDiscreteMC1_te{i}")
-      inp.system.ad = dict(inputs=dict(t = 5.5 + ei),
+      inp.system.ad = dict(inputs=dict(t = 4.5 + ei),
                            input_type="point_forces",
                            grad_type="value", #"jacrev", #value
                            objective_fun="pmean",
                            objective_var="ra",
                            objective_args=dict(nodes=(35,), components=(0,1,2,3,4,5),
-                                               t=(inp.system.t[-1],))
+                                               t=(4,)) # note this solution adds an extra 4.5 to t, hence the 4 index instead of 3
                            )
 
       sol4e = feniax.feniax_shardmain.main(input_dict=inp, device_count=device_count)
@@ -2825,6 +2827,7 @@ make gust video
 - Run with varying paths for Jacobian convergence
 #+begin_src python :tangle settings_ADDiscreteMC1_t_fdjac.py :session *pyshard4*
   <<DiscreteMC1>>
+  inp.system.t = [1, 2, 3, 4] # reduced to 4, to then compute 4.5
   paths = [8, 80, 4e2, 8e2, 4e3]
   for i, pi in enumerate(paths):
       follower_points, follower_interpolation = external_forces(_interpolation, int(pi))
@@ -2836,13 +2839,13 @@ make gust video
 
       inp.driver.sol_path = pathlib.Path(
           f"{results_path}/ADDiscreteMC1_tjac{i}")
-      inp.system.ad = dict(inputs=dict(t = 5.5),
+      inp.system.ad = dict(inputs=dict(t = 4.5),
                            input_type="point_forces",
                            grad_type="value", #"jacrev", #value
                            objective_fun="pmean",
                            objective_var="ra",
                            objective_args=dict(nodes=(35,), components=(0,1,2,3,4,5),
-                                               t=(inp.system.t[-1],))
+                                               t=(4,))
                            )
 
       sol4j = feniax.feniax_shardmain.main(input_dict=inp, device_count=device_count)
@@ -2855,6 +2858,7 @@ make gust video
   
 #+begin_src python :tangle settings_ADDiscreteMC1_fem.py :session *pyshard4*
   <<DiscreteMC1high>>
+  inp.system.t = [1, 2, 3, 4, 4.5]
   inp.driver.sol_path = pathlib.Path(
        f"{results_path}/ADDiscreteMC1_fem")
   inp.system.ad = dict(inputs=dict(eigenvals=inp.fem.eig_names[0],
@@ -2866,7 +2870,7 @@ make gust video
                        objective_fun="pmean",
                        objective_var="X2",
                        objective_args=dict(nodes=(13,), components=(0,1),
-                                           t=(inp.system.t[-1],))
+                                           t=(4,))
                        )
 
   sol5 = feniax.feniax_shardmain.main(input_dict=inp, device_count=device_count)
@@ -2907,6 +2911,7 @@ for local testing:
                    intensity= np.linspace(5, 25, 11),
                    #rho_inf = np.linspace(0.3, rho_inf, 2)
                  )
+  inp.system.operationalmode = "shardmap"   
   inp.system.shard = dict(input_type="gust1",
                         inputs=inputflow)
   solgust21shard = feniax.feniax_shardmain.main(input_dict=inp,
@@ -2923,10 +2928,11 @@ for local testing:
       f"{results_path}/gust3_{sol}Shard")
   inp.system.aero.gust.fixed_discretisation = [150, u_inf]
   # Shard inputs
-  inputflow = dict(length=np.linspace(25,265,13),
-                   intensity=np.linspace(0.1, 3, 11),
+  inputflow = dict(length=np.linspace(25,265,8),
+                   intensity=np.linspace(1, 3, 8),
                    rho_inf = np.linspace(0.34,0.48,8)
                  )
+  inp.system.operationalmode = "shardmap"  
   inp.system.shard = dict(input_type="gust1",
                           inputs=inputflow)
 
@@ -3052,11 +3058,17 @@ plotly color scales:
   inp.system.aero.gust.fixed_discretisation = [150, u_inf]
   # Shard inputs
   inputflow = dict(length=np.linspace(25,265,13),
-                   intensity=np.linspace(0.1, 3, 11),
+                   #intensity=np.linspace(0.1, 3, 11),
                    rho_inf = np.linspace(0.34,0.48,8)
                  )
+  inputflow = dict(length=np.linspace(50,200,16),
+                   intensity=np.linspace(0.1, 3, 2),
+                   rho_inf = [rho_inf] #np.linspace(0.34,0.48,1)
+                   )
+
   inp.system.shard = dict(input_type="gust1",
                           inputs=inputflow)
+  inp.system.operationalmode = "shardmap"   
   node = 12
   components = (2,3,4) # shear, torsion, oop bending
   inp.forager.typeof = "shard2adgust"
@@ -3078,9 +3090,9 @@ plotly color scales:
   solforager = feniax.feniax_shardmain.main(input_dict=inp, device_count=num_gpus)
 
   def validation_max():
-  
+
       import jax.numpy as jnp
-  
+
       # for component 2:
       ci = 2
       field_i = jnp.abs(solforager.dynamicsystem_s1.X2[:,:,ci,node])
@@ -3097,7 +3109,7 @@ plotly color scales:
       index = jnp.unravel_index(argmax,
                                 field_i.shape) # get max index in field_i shape
       assert solforager.forager_shard2adgust.filtered_map[(node,ci)] == index
-  
+
       # for component 4:
       ci = 4
       field_i = jnp.abs(solforager.dynamicsystem_s1.X2[:,:,ci,node])

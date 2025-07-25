@@ -104,15 +104,16 @@ inputforces = dict(follower_points=follower_points,
 inp.system.shard = dict(input_type="pointforces",
                         inputs=inputforces)
 
+inp.system.t = [1, 2, 3, 4] # reduced to 4, to then compute 4.5
 inp.driver.sol_path = pathlib.Path(
      f"{results_path}/ADDiscreteMC1_t")
-inp.system.ad = dict(inputs=dict(t = 5.5),
+inp.system.ad = dict(inputs=dict(t = 4.5),
                      input_type="point_forces",
                      grad_type="jacrev", #"jacrev", #value
                      objective_fun="pmean",
                      objective_var="ra",
                      objective_args=dict(nodes=(35,), components=(0,1,2,3,4,5),
-                                         t=(inp.system.t[-1],))
+                                         t=(4,))
                      )
 
 sol4 = feniax.feniax_shardmain.main(input_dict=inp, device_count=device_count)

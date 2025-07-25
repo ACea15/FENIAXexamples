@@ -104,17 +104,18 @@ inputforces = dict(follower_points=follower_points,
 inp.system.shard = dict(input_type="pointforces",
                         inputs=inputforces)
 
+inp.system.t = [1, 2, 3, 4] # reduced to 4, to then compute 4.5  
 epsilons = [1e-1, 1e-2, 1e-3, 1e-4, 1e-5]
 for i, ei in enumerate(epsilons):
     inp.driver.sol_path = pathlib.Path(
         f"{results_path}/ADDiscreteMC1_te{i}")
-    inp.system.ad = dict(inputs=dict(t = 5.5 + ei),
+    inp.system.ad = dict(inputs=dict(t = 4.5 + ei),
                          input_type="point_forces",
                          grad_type="value", #"jacrev", #value
                          objective_fun="pmean",
                          objective_var="ra",
                          objective_args=dict(nodes=(35,), components=(0,1,2,3,4,5),
-                                             t=(inp.system.t[-1],))
+                                             t=(4,)) # note this solution adds an extra 4.5 to t, hence the 4 index instead of 3
                          )
 
     sol4e = feniax.feniax_shardmain.main(input_dict=inp, device_count=device_count)

@@ -13,8 +13,8 @@ else:
     results_path = "./results/"
 
 label_dlm = "d1c7"
-sol = "cao"
-label_gaf = "Dd1c7F3Scao-100"
+sol = "eao"
+label_gaf = "Dd1c7F3Seao-100"
 num_modes = 100
 c_ref = 3.0
 u_inf = 209.62786434059765
@@ -81,11 +81,17 @@ inp.driver.sol_path = pathlib.Path(
 inp.system.aero.gust.fixed_discretisation = [150, u_inf]
 # Shard inputs
 inputflow = dict(length=np.linspace(25,265,13),
-                 intensity=np.linspace(0.1, 3, 11),
+                 #intensity=np.linspace(0.1, 3, 11),
                  rho_inf = np.linspace(0.34,0.48,8)
                )
+inputflow = dict(length=np.linspace(50,200,16),
+                 intensity=np.linspace(0.1, 3, 2),
+                 rho_inf = [rho_inf] #np.linspace(0.34,0.48,1)
+                 )
+
 inp.system.shard = dict(input_type="gust1",
                         inputs=inputflow)
+inp.system.operationalmode = "shardmap"   
 node = 12
 components = (2,3,4) # shear, torsion, oop bending
 inp.forager.typeof = "shard2adgust"
@@ -135,7 +141,7 @@ def validation_max():
     index = jnp.unravel_index(argmax,
                               field_i.shape) # get max index in field_i shape
     assert solforager.forager_shard2adgust.filtered_map[(node,ci)] == index
-
+  
 def validation_ad():
     """
     Only run the gust of the first problematic gust case to compare FD

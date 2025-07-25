@@ -13,8 +13,8 @@ else:
     results_path = "./results/"
 
 label_dlm = "d1c7"
-sol = "cao"
-label_gaf = "Dd1c7F3Scao-100"
+sol = "eao"
+label_gaf = "Dd1c7F3Seao-100"
 num_modes = 100
 c_ref = 3.0
 u_inf = 209.62786434059765
@@ -84,6 +84,7 @@ inputflow = dict(length=np.linspace(50,200,11),
                  intensity= np.linspace(5, 25, 11),
                  #rho_inf = np.linspace(0.3, rho_inf, 2)
                )
+inp.system.operationalmode = "shardmap"   
 inp.system.shard = dict(input_type="gust1",
                       inputs=inputflow)
 solgust21shard = feniax.feniax_shardmain.main(input_dict=inp,

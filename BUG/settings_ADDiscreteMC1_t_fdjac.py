@@ -96,6 +96,7 @@ def external_forces(_interpolation, paths):
 _interpolation = [0., 3.e3, 7e3, 9e3, 1e4, 1.5e4]
 paths = 8 * 40#200
 
+inp.system.t = [1, 2, 3, 4] # reduced to 4, to then compute 4.5
 paths = [8, 80, 4e2, 8e2, 4e3]
 for i, pi in enumerate(paths):
     follower_points, follower_interpolation = external_forces(_interpolation, int(pi))
@@ -107,13 +108,13 @@ for i, pi in enumerate(paths):
 
     inp.driver.sol_path = pathlib.Path(
         f"{results_path}/ADDiscreteMC1_tjac{i}")
-    inp.system.ad = dict(inputs=dict(t = 5.5),
+    inp.system.ad = dict(inputs=dict(t = 4.5),
                          input_type="point_forces",
                          grad_type="value", #"jacrev", #value
                          objective_fun="pmean",
                          objective_var="ra",
                          objective_args=dict(nodes=(35,), components=(0,1,2,3,4,5),
-                                             t=(inp.system.t[-1],))
+                                             t=(4,))
                          )
 
     sol4j = feniax.feniax_shardmain.main(input_dict=inp, device_count=device_count)
