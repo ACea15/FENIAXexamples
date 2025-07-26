@@ -110,10 +110,10 @@ for i, pi in enumerate(paths):
         f"{results_path}/ADDiscreteMC1_tjac{i}")
     inp.system.ad = dict(inputs=dict(t = 4.5),
                          input_type="point_forces",
-                         grad_type="value", #"jacrev", #value
+                         grad_type="jacrev", #"jacrev", #value
                          objective_fun="pmean",
                          objective_var="ra",
-                         objective_args=dict(nodes=(35,), components=(0,1,2,3,4,5),
+                         objective_args=dict(nodes=(35,), components=(0,1,2),
                                              t=(4,))
                          )
 

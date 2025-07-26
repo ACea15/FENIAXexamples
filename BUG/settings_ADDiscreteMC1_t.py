@@ -112,7 +112,7 @@ inp.system.ad = dict(inputs=dict(t = 4.5),
                      grad_type="jacrev", #"jacrev", #value
                      objective_fun="pmean",
                      objective_var="ra",
-                     objective_args=dict(nodes=(35,), components=(0,1,2,3,4,5),
+                     objective_args=dict(nodes=(35,), components=(0,1,2),
                                          t=(4,))
                      )
 

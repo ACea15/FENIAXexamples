@@ -114,7 +114,7 @@ for i, ei in enumerate(epsilons):
                          grad_type="value", #"jacrev", #value
                          objective_fun="pmean",
                          objective_var="ra",
-                         objective_args=dict(nodes=(35,), components=(0,1,2,3,4,5),
+                         objective_args=dict(nodes=(35,), components=(0,1,2),
                                              t=(4,)) # note this solution adds an extra 4.5 to t, hence the 4 index instead of 3
                          )
 

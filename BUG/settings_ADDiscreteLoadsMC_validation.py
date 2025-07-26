@@ -136,4 +136,4 @@ inp.driver.sol_path = pathlib.Path(
 
 sol13 = feniax.feniax_shardmain.main(input_dict=inp, device_count=8)
 
-jac = (sol12.staticsystem_s1.f_ad - sol13.staticsystem_s1.f_ad) / epsilon
+jac = (sol12.staticsystem_s1.objective - sol13.staticsystem_s1.objective) / epsilon
