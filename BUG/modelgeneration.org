@@ -2272,8 +2272,8 @@ make gif
 #+NAME: ad
 #+begin_src python :tangle settings_gust1AD.py :results value raw
   import pandas as pd
-  sol1.dynamicsystem_s1.f_ad
-  df =pd.DataFrame(dict(f=sol1.dynamicsystem_s1.f_ad.reshape(6))|{k:v.reshape(6) for k,v in sol1.dynamicsystem_s1.jac.items()}, index=range(6))
+  sol1.dynamicsystem_s1.objective
+  df =pd.DataFrame(dict(f=sol1.dynamicsystem_s1.objective.reshape(6))|{k:v.reshape(6) for k,v in sol1.dynamicsystem_s1.jac.items()}, index=range(6))
   df
 #+end_src
 
