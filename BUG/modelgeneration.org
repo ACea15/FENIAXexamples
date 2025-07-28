@@ -3118,7 +3118,7 @@ plotly color scales:
       index = jnp.unravel_index(argmax,
                                 field_i.shape) # get max index in field_i shape
       assert solforager.forager_shard2adgust.filtered_map[(node,ci)] == index
-    
+
   def validation_ad():
       """
       Only run the gust of the first problematic gust case to compare FD
@@ -3156,6 +3156,7 @@ plotly color scales:
                                    t_range)
                  ) / epsilon
       ##########
+      epsilon = 1e-4 # tweaking fd
       inp.system.aero.rho_inf = rho
       inp.system.aero.gust.length += epsilon
       inp.driver.sol_path = pathlib.Path(
@@ -3171,6 +3172,7 @@ plotly color scales:
                                       t_range)
                     ) / epsilon
       ############
+      epsilon = 1e-3 # tweaking fd      
       inp.system.aero.gust.length = length
       inp.system.aero.gust.intensity += epsilon
       inp.driver.sol_path = pathlib.Path(

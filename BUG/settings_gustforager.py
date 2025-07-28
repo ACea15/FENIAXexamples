@@ -179,6 +179,7 @@ def validation_ad():
                                  t_range)
                ) / epsilon
     ##########
+    epsilon = 1e-4 # tweaking fd
     inp.system.aero.rho_inf = rho
     inp.system.aero.gust.length += epsilon
     inp.driver.sol_path = pathlib.Path(
@@ -194,6 +195,7 @@ def validation_ad():
                                     t_range)
                   ) / epsilon
     ############
+    epsilon = 1e-3 # tweaking fd      
     inp.system.aero.gust.length = length
     inp.system.aero.gust.intensity += epsilon
     inp.driver.sol_path = pathlib.Path(
