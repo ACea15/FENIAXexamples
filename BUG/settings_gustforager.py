@@ -85,14 +85,14 @@ inputflow = dict(length=np.linspace(25,265,13),
                  rho_inf = np.linspace(0.34,0.48,8)
                )
 inputflow = dict(length=np.linspace(50,200,16),
-                 intensity=np.linspace(0.1, 3, 2),
-                 rho_inf = [rho_inf] #np.linspace(0.34,0.48,1)
+                 intensity=np.linspace(5, 25, 2),
+                 rho_inf = [0.8*rho_inf, rho_inf] #np.linspace(0.34,0.48,1)
                  )
 
 inp.system.shard = dict(input_type="gust1",
                         inputs=inputflow)
 inp.system.operationalmode = "shardmap"   
-node = 12
+node = 13
 components = (2,3,4) # shear, torsion, oop bending
 inp.forager.typeof = "shard2adgust"
 inp.forager.settings.gathersystem_name = "s1"
@@ -141,7 +141,7 @@ def validation_max():
     index = jnp.unravel_index(argmax,
                               field_i.shape) # get max index in field_i shape
     assert solforager.forager_shard2adgust.filtered_map[(node,ci)] == index
-  
+
 def validation_ad():
     """
     Only run the gust of the first problematic gust case to compare FD
@@ -164,7 +164,7 @@ def validation_ad():
         f"{results_path}/gustforager_validation")
 
     sol = feniax.feniax_main.main(input_dict=inp)
-    epsilon = 1e-3
+    epsilon = 1e-5
     inp.system.aero.rho_inf += epsilon
     inp.driver.sol_path = pathlib.Path(
         f"{results_path}/gustforager_epsilonrho")

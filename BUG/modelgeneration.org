@@ -2898,7 +2898,7 @@ make gust video
 *** Gust
 - Presented in Scitech 25 and extended in JFS25 with AD
 
-for local testing:
+for plotting and local testing:
 #+begin_src python :tangle settings_gust1shard.py :session *pyshard2*
   <<ImportsFeniaxShard>>
   <<GustMain>>
@@ -2919,17 +2919,17 @@ for local testing:
 
 #+end_src
 
-- Careful: very quickly you run out of the 64GB of RAM
-#+begin_src python :tangle settings_gust1shard.py :session *pyshard2*
+- For benchmark. Careful: very quickly you run out of the 64GB of RAM
+#+begin_src python :tangle settings_gust1shardbench.py :session *pyshard2*
   <<ImportsFeniaxShard>>
   <<GustMain>>
 
   inp.driver.sol_path = pathlib.Path(
-      f"{results_path}/gust3_{sol}Shard")
+      f"{results_path}/gust1_{sol}ShardBench")
   inp.system.aero.gust.fixed_discretisation = [150, u_inf]
   # Shard inputs
-  inputflow = dict(length=np.linspace(25,265,8),
-                   intensity=np.linspace(1, 3, 8),
+  inputflow = dict(length=np.linspace(50,200,8),
+                   intensity=np.linspace(5, 25, 8),
                    rho_inf = np.linspace(0.34,0.48,8)
                  )
   inp.system.operationalmode = "shardmap"  
@@ -3062,14 +3062,14 @@ plotly color scales:
                    rho_inf = np.linspace(0.34,0.48,8)
                  )
   inputflow = dict(length=np.linspace(50,200,16),
-                   intensity=np.linspace(0.1, 3, 2),
-                   rho_inf = [rho_inf] #np.linspace(0.34,0.48,1)
+                   intensity=np.linspace(5, 25, 2),
+                   rho_inf = [0.8*rho_inf, rho_inf] #np.linspace(0.34,0.48,1)
                    )
 
   inp.system.shard = dict(input_type="gust1",
                           inputs=inputflow)
   inp.system.operationalmode = "shardmap"   
-  node = 12
+  node = 13
   components = (2,3,4) # shear, torsion, oop bending
   inp.forager.typeof = "shard2adgust"
   inp.forager.settings.gathersystem_name = "s1"
@@ -3141,7 +3141,7 @@ plotly color scales:
           f"{results_path}/gustforager_validation")
 
       sol = feniax.feniax_main.main(input_dict=inp)
-      epsilon = 1e-3
+      epsilon = 1e-5
       inp.system.aero.rho_inf += epsilon
       inp.driver.sol_path = pathlib.Path(
           f"{results_path}/gustforager_epsilonrho")
