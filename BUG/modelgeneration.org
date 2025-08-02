@@ -2792,7 +2792,7 @@ make gust video
        f"{results_path}/ADDiscreteMC1_t")
   inp.system.ad = dict(inputs=dict(t = 4.5),
                        input_type="point_forces",
-                       grad_type="jacrev", #"jacrev", #value
+                       grad_type="jacfwd", #"jacrev", #value
                        objective_fun="pmean",
                        objective_var="ra",
                        objective_args=dict(nodes=(35,), components=(0,1,2),
@@ -2808,6 +2808,23 @@ make gust video
   <<DiscreteMC1high>>
   inp.system.t = [1, 2, 3, 4] # reduced to 4, to then compute 4.5  
   epsilons = [1e-1, 1e-2, 1e-3, 1e-4, 1e-5]
+  inp.driver.sol_path = pathlib.Path(
+      f"{results_path}/ADDiscreteMC1_te")
+  inp.system.ad = dict(inputs=dict(t = 4.5),
+                       input_type="point_forces",
+                       grad_type="value", #"jacrev", #value
+                       objective_fun="pmean",
+                       objective_var="ra",
+                       objective_args=dict(nodes=(35,), components=(0,1,2),
+                                           t=(4,)) # note this solution adds an extra 4.5 to t, hence the 4 index instead of 3
+                       )
+
+  sol4e0 = feniax.feniax_shardmain.main(input_dict=inp, device_count=device_count)
+  import jax.numpy as jnp
+  mc1_eobj = list()
+  mc1_ejac = list()
+  jac_ediff = list()
+  obj_t = sol4e0.data.staticsystem_s1.objective
   for i, ei in enumerate(epsilons):
       inp.driver.sol_path = pathlib.Path(
           f"{results_path}/ADDiscreteMC1_te{i}")
@@ -2821,6 +2838,10 @@ make gust video
                            )
 
       sol4e = feniax.feniax_shardmain.main(input_dict=inp, device_count=device_count)
+      #sol_admc1_e[i] = solution.IntrinsicReader(f"./ADDiscreteMC1_te{i}")
+      mc1_eobj.append(sol4e.data.staticsystem_s1.objective)
+      mc1_ejac.append((mc1_eobj[i] - obj_t) / ei)
+      jac_ediff.append(jnp.linalg.norm(mc1_ejac[i]-jac_t) / jnp.linalg.norm(jac_t))
 
 #+end_src
 
@@ -2828,7 +2849,7 @@ make gust video
 #+begin_src python :tangle settings_ADDiscreteMC1_t_fdjac.py :session *pyshard4*
   <<DiscreteMC1>>
   inp.system.t = [1, 2, 3, 4] # reduced to 4, to then compute 4.5
-  paths = [8, 80, 4e2, 8e2, 4e3]
+  paths = [8, 80, 4e2, 8e2, 4e3, 8e3, 2e4]
   for i, pi in enumerate(paths):
       follower_points, follower_interpolation = external_forces(_interpolation, int(pi))
       inputforces = dict(follower_points=follower_points,
@@ -2841,7 +2862,7 @@ make gust video
           f"{results_path}/ADDiscreteMC1_tjac{i}")
       inp.system.ad = dict(inputs=dict(t = 4.5),
                            input_type="point_forces",
-                           grad_type="jacrev", #"jacrev", #value
+                           grad_type="jacfwd", #"jacrev", #value
                            objective_fun="pmean",
                            objective_var="ra",
                            objective_args=dict(nodes=(35,), components=(0,1,2),
