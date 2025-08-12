@@ -1,4 +1,4 @@
-# [[file:modelgeneration.org::*AD_t][AD_t:1]]
+# [[file:modelgeneration.org::*AD_t][AD_t:2]]
 import pathlib
 import time
 #import jax.numpy as jnp
@@ -15,7 +15,7 @@ else:
 np.random.seed(2025)
 sol = "cao"
 num_modes = 100
-device_count = 8
+device_count = 1  # change to multiple to test parallelisation
 inp = Inputs()
 inp.engine = "intrinsicmodal"
 inp.fem.eig_type = "inputs"
@@ -94,7 +94,7 @@ def external_forces(_interpolation, paths):
     return follower_points, follower_interpolation
 
 _interpolation = [0., 3.e3, 7e3, 9e3, 1e4, 1.5e4]
-paths = 8 * 40#200
+paths = 8 * 100#200
 
 
 follower_points, follower_interpolation = external_forces(_interpolation, paths)
@@ -106,6 +106,24 @@ inp.system.shard = dict(input_type="pointforces",
 
 inp.system.t = [1, 2, 3, 4] # reduced to 4, to then compute 4.5  
 epsilons = [1e-1, 1e-2, 1e-3, 1e-4, 1e-5]
+inp.driver.sol_path = pathlib.Path(
+    f"{results_path}/ADDiscreteMC1_te")
+inp.system.ad = dict(inputs=dict(t = 4.5),
+                     input_type="point_forces",
+                     grad_type="jacfwd", #"jacrev", #value
+                     objective_fun="pmean",
+                     objective_var="ra",
+                     objective_args=dict(nodes=(35,), components=(0,1,2),
+                                         t=(4,)) # note this solution adds an extra 4.5 to t, hence the 4 index instead of 3
+                     )
+
+sol4e0 = feniax.feniax_shardmain.main(input_dict=inp, device_count=device_count)
+jac_t = sol4e0.staticsystem_s1.jac['t']
+import jax.numpy as jnp
+mc1_eobj = list()
+mc1_ejac = list()
+jac_ediff = list()
+obj_t = sol4e0.staticsystem_s1.objective
 for i, ei in enumerate(epsilons):
     inp.driver.sol_path = pathlib.Path(
         f"{results_path}/ADDiscreteMC1_te{i}")
@@ -119,4 +137,8 @@ for i, ei in enumerate(epsilons):
                          )
 
     sol4e = feniax.feniax_shardmain.main(input_dict=inp, device_count=device_count)
-# AD_t:1 ends here
+    #sol_admc1_e[i] = solution.IntrinsicReader(f"./ADDiscreteMC1_te{i}")
+    mc1_eobj.append(sol4e.staticsystem_s1.objective)
+    mc1_ejac.append((mc1_eobj[i] - obj_t) / ei)
+    jac_ediff.append(jnp.linalg.norm((mc1_ejac[i]-jac_t) / jac_t))
+# AD_t:2 ends here

@@ -15,7 +15,7 @@ else:
 np.random.seed(2025)
 sol = "cao"
 num_modes = 100
-device_count = 8
+device_count = 1  # change to multiple to test parallelisation
 inp = Inputs()
 inp.engine = "intrinsicmodal"
 inp.fem.eig_type = "inputs"
@@ -94,7 +94,7 @@ def external_forces(_interpolation, paths):
     return follower_points, follower_interpolation
 
 _interpolation = [0., 3.e3, 7e3, 9e3, 1e4, 1.5e4]
-paths = 8 * 40#200
+paths = 8 * 100#200
 
 
 _interpolation = [it * 1e-2 for it in _interpolation]

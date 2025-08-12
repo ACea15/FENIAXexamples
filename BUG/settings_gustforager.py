@@ -178,13 +178,15 @@ def validation_ad():
                                  jnp.array(components),
                                  t_range)
                ) / epsilon
+    jnp.save(f"{results_path}/gustforager_epsilonrho/jac_rho.npy", jac_rho)      
     ##########
-    epsilon = 1e-4 # tweaking fd
+    epsilon = 1e-5 # tweaking fd
     inp.system.aero.rho_inf = rho
     inp.system.aero.gust.length += epsilon
     inp.driver.sol_path = pathlib.Path(
         f"{results_path}/gustforager_epsilonlength")
     sol_length = feniax.feniax_main.main(input_dict=inp)
+
     jac_length = (objectives.X2_MAX(sol_length.dynamicsystem_s1.X2,
                                  jnp.array([node]),
                                  jnp.array(components),
@@ -194,8 +196,10 @@ def validation_ad():
                                     jnp.array(components),
                                     t_range)
                   ) / epsilon
+
+    jnp.save(f"{results_path}/gustforager_epsilonlength/jac_length.npy", jac_length)
     ############
-    epsilon = 1e-3 # tweaking fd      
+    epsilon = 1e-5 # tweaking fd      
     inp.system.aero.gust.length = length
     inp.system.aero.gust.intensity += epsilon
     inp.driver.sol_path = pathlib.Path(
@@ -210,7 +214,7 @@ def validation_ad():
                                        jnp.array(components),
                                        t_range)
                ) / epsilon
-
+    jnp.save(f"{results_path}/gustforager_epsilonintensity/jac_intensity.npy", jac_intensity)
     return jac_rho, jac_length, jac_intensity
 
 validation_max()

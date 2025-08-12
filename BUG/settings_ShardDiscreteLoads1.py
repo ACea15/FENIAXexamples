@@ -124,8 +124,5 @@ inputforces = dict(follower_points=[[[35, 0], [61, 0], [35, 1], [61, 1]],
                  )  
 inp.system.shard = dict(input_type="pointforces",
                         inputs=inputforces)
-t1 = time.time()
 sol = feniax.feniax_shardmain.main(input_dict=inp, device_count=device_count)
-t2 = time.time()
-print(f"Time DiscreteLoads: {t2 - t1}")
 # DiscreteLoads ends here

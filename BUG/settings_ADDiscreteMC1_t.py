@@ -15,7 +15,7 @@ else:
 np.random.seed(2025)
 sol = "cao"
 num_modes = 100
-device_count = 8
+device_count = 1  # change to multiple to test parallelisation
 inp = Inputs()
 inp.engine = "intrinsicmodal"
 inp.fem.eig_type = "inputs"
@@ -94,7 +94,7 @@ def external_forces(_interpolation, paths):
     return follower_points, follower_interpolation
 
 _interpolation = [0., 3.e3, 7e3, 9e3, 1e4, 1.5e4]
-paths = 8 * 40#200
+paths = 8 * 100#200
 
 
 follower_points, follower_interpolation = external_forces(_interpolation, paths)
@@ -109,7 +109,7 @@ inp.driver.sol_path = pathlib.Path(
      f"{results_path}/ADDiscreteMC1_t")
 inp.system.ad = dict(inputs=dict(t = 4.5),
                      input_type="point_forces",
-                     grad_type="jacrev", #"jacrev", #value
+                     grad_type="jacfwd", #"jacrev", #value
                      objective_fun="pmean",
                      objective_var="ra",
                      objective_args=dict(nodes=(35,), components=(0,1,2),

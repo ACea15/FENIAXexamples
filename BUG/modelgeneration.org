@@ -52,6 +52,7 @@
   from feniax.unastran.asetbuilder import BuildAsetModel
   import feniax.plotools.nastranvtk.bdfdef as bdfdef
   import numpy as np
+  from pyNastran.bdf.mesh_utils.mass_properties import mass_properties
 
   num_modes = 200
   sol = "eao" # {c,e}{a,f}{o,p}
@@ -78,6 +79,7 @@
 #+begin_src python  :results none
   bdf = BDF()#debug=False)
   bdf.read_bdf("./NASTRAN/BUG103.bdf", validate=False)
+  mass, cg, inertia = mass_properties(bdf)
 
   # bdf_conm2 = BDF()
   # conm2_ids = list(range(314, 345)) + [376, 377, 378]
@@ -2278,7 +2280,6 @@ make gif
 #+end_src
 
 ** Sharding
-
 *** Discrete loads
 
 - Combination of follower tip loads and moments that lead to very large deformations.
@@ -2460,7 +2461,7 @@ Forces and moments at node 35 and 61
           ra_movie=None)
 #+end_src
 
-#+begin_src python :tangle ./results/ShardDiscreteLoads1/paraviewM300/merge.py :session *pyshard3*
+#+begin_src python :tangle ./results/ShardDiscreteLoads1/paraviewM300/merge.py :session *pyshard3* :mkdirp yes
   from paraview.simple import *
   import pathlib
 
@@ -2546,7 +2547,7 @@ make gust video
   np.random.seed(2025)
   sol = "cao"
   num_modes = 100
-  device_count = 8
+  device_count = 1  # change to multiple to test parallelisation
   <<MainBug>>
   inp.simulation.typeof = "single"
   inp.system.name = "s1"
@@ -2599,7 +2600,7 @@ make gust video
       return follower_points, follower_interpolation
 
   _interpolation = [0., 3.e3, 7e3, 9e3, 1e4, 1.5e4]
-  paths = 8 * 40#200
+  paths = 8 * 100#200
 
 #+end_src
 
@@ -2812,19 +2813,20 @@ make gust video
       f"{results_path}/ADDiscreteMC1_te")
   inp.system.ad = dict(inputs=dict(t = 4.5),
                        input_type="point_forces",
-                       grad_type="value", #"jacrev", #value
+                       grad_type="jacfwd", #"jacrev", #value
                        objective_fun="pmean",
                        objective_var="ra",
                        objective_args=dict(nodes=(35,), components=(0,1,2),
                                            t=(4,)) # note this solution adds an extra 4.5 to t, hence the 4 index instead of 3
                        )
-
+  
   sol4e0 = feniax.feniax_shardmain.main(input_dict=inp, device_count=device_count)
+  jac_t = sol4e0.staticsystem_s1.jac['t']
   import jax.numpy as jnp
   mc1_eobj = list()
   mc1_ejac = list()
   jac_ediff = list()
-  obj_t = sol4e0.data.staticsystem_s1.objective
+  obj_t = sol4e0.staticsystem_s1.objective
   for i, ei in enumerate(epsilons):
       inp.driver.sol_path = pathlib.Path(
           f"{results_path}/ADDiscreteMC1_te{i}")
@@ -2836,13 +2838,13 @@ make gust video
                            objective_args=dict(nodes=(35,), components=(0,1,2),
                                                t=(4,)) # note this solution adds an extra 4.5 to t, hence the 4 index instead of 3
                            )
-
+  
       sol4e = feniax.feniax_shardmain.main(input_dict=inp, device_count=device_count)
       #sol_admc1_e[i] = solution.IntrinsicReader(f"./ADDiscreteMC1_te{i}")
-      mc1_eobj.append(sol4e.data.staticsystem_s1.objective)
+      mc1_eobj.append(sol4e.staticsystem_s1.objective)
       mc1_ejac.append((mc1_eobj[i] - obj_t) / ei)
-      jac_ediff.append(jnp.linalg.norm(mc1_ejac[i]-jac_t) / jnp.linalg.norm(jac_t))
-
+      jac_ediff.append(jnp.linalg.norm((mc1_ejac[i]-jac_t) / jac_t))
+  
 #+end_src
 
 - Run with varying paths for Jacobian convergence
@@ -2873,7 +2875,6 @@ make gust video
 
 #+end_src
   
-
 **** AD_fem
 - Now AD against fem matrices and again vectors instead of t
   
@@ -3062,7 +3063,6 @@ plotly color scales:
       pio.write_image(fig, f"./figs/x2min_c{i}.pdf", scale=scale_quality)
       fig.show()  
 #+end_src
-
 
 ** Forager
 
