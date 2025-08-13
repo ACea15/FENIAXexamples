@@ -94,7 +94,7 @@ def external_forces(_interpolation, paths):
     return follower_points, follower_interpolation
 
 _interpolation = [0., 3.e3, 7e3, 9e3, 1e4, 1.5e4]
-paths = 8 * 100#200
+paths = 8 * 25 #200
 
 
 follower_points, follower_interpolation = external_forces(_interpolation, paths)

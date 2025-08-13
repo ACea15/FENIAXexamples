@@ -1,4 +1,4 @@
-# [[file:modelgeneration.org::*AD_t][AD_t:3]]
+# [[file:modelgeneration.org::*AD_t][AD_t:1]]
 import pathlib
 import time
 #import jax.numpy as jnp
@@ -94,10 +94,11 @@ def external_forces(_interpolation, paths):
     return follower_points, follower_interpolation
 
 _interpolation = [0., 3.e3, 7e3, 9e3, 1e4, 1.5e4]
-paths = 8 * 100#200
+paths = 8 * 50 #200
 
 inp.system.t = [1, 2, 3, 4] # reduced to 4, to then compute 4.5
-paths = [8, 80, 4e2, 8e2, 4e3, 8e3, 2e4]
+#paths = [8, 80, 4e2, 8e2, 4e3, 8e3] # blows the memory
+paths = [8, 80, 4e2, 8e2, 4e3]
 for i, pi in enumerate(paths):
     follower_points, follower_interpolation = external_forces(_interpolation, int(pi))
     inputforces = dict(follower_points=follower_points,
@@ -118,4 +119,4 @@ for i, pi in enumerate(paths):
                          )
 
     sol4j = feniax.feniax_shardmain.main(input_dict=inp, device_count=device_count)
-# AD_t:3 ends here
+# AD_t:1 ends here

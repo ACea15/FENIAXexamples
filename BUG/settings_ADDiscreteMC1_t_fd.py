@@ -1,4 +1,4 @@
-# [[file:modelgeneration.org::*AD_t][AD_t:2]]
+# [[file:modelgeneration.org::*AD_t][AD_t:1]]
 import pathlib
 import time
 #import jax.numpy as jnp
@@ -94,7 +94,7 @@ def external_forces(_interpolation, paths):
     return follower_points, follower_interpolation
 
 _interpolation = [0., 3.e3, 7e3, 9e3, 1e4, 1.5e4]
-paths = 8 * 100#200
+paths = 8 * 50 #200
 
 
 follower_points, follower_interpolation = external_forces(_interpolation, paths)
@@ -141,4 +141,6 @@ for i, ei in enumerate(epsilons):
     mc1_eobj.append(sol4e.staticsystem_s1.objective)
     mc1_ejac.append((mc1_eobj[i] - obj_t) / ei)
     jac_ediff.append(jnp.linalg.norm((mc1_ejac[i]-jac_t) / jac_t))
-# AD_t:2 ends here
+
+jnp.save(f"{results_path}/ADDiscreteMC1_te/jac_e.npy", jnp.array(jac_ediff))
+# AD_t:1 ends here

@@ -2600,7 +2600,7 @@ make gust video
       return follower_points, follower_interpolation
 
   _interpolation = [0., 3.e3, 7e3, 9e3, 1e4, 1.5e4]
-  paths = 8 * 100#200
+  paths = 8 * 50 #200
 
 #+end_src
 
@@ -2804,7 +2804,7 @@ make gust video
 
 #+end_src
 
-- Run with epsilons for finite-difference, note: no AD being run, just value
+- Run with epsilons for finite-difference, note epsilons run only, no AD ("value")
 #+begin_src python :tangle settings_ADDiscreteMC1_t_fd.py :session *pyshard4*
   <<DiscreteMC1high>>
   inp.system.t = [1, 2, 3, 4] # reduced to 4, to then compute 4.5  
@@ -2819,7 +2819,7 @@ make gust video
                        objective_args=dict(nodes=(35,), components=(0,1,2),
                                            t=(4,)) # note this solution adds an extra 4.5 to t, hence the 4 index instead of 3
                        )
-  
+
   sol4e0 = feniax.feniax_shardmain.main(input_dict=inp, device_count=device_count)
   jac_t = sol4e0.staticsystem_s1.jac['t']
   import jax.numpy as jnp
@@ -2838,20 +2838,22 @@ make gust video
                            objective_args=dict(nodes=(35,), components=(0,1,2),
                                                t=(4,)) # note this solution adds an extra 4.5 to t, hence the 4 index instead of 3
                            )
-  
+
       sol4e = feniax.feniax_shardmain.main(input_dict=inp, device_count=device_count)
       #sol_admc1_e[i] = solution.IntrinsicReader(f"./ADDiscreteMC1_te{i}")
       mc1_eobj.append(sol4e.staticsystem_s1.objective)
       mc1_ejac.append((mc1_eobj[i] - obj_t) / ei)
       jac_ediff.append(jnp.linalg.norm((mc1_ejac[i]-jac_t) / jac_t))
-  
+      
+  jnp.save(f"{results_path}/ADDiscreteMC1_te/jac_e.npy", jnp.array(jac_ediff))
 #+end_src
 
 - Run with varying paths for Jacobian convergence
 #+begin_src python :tangle settings_ADDiscreteMC1_t_fdjac.py :session *pyshard4*
   <<DiscreteMC1>>
   inp.system.t = [1, 2, 3, 4] # reduced to 4, to then compute 4.5
-  paths = [8, 80, 4e2, 8e2, 4e3, 8e3, 2e4]
+  #paths = [8, 80, 4e2, 8e2, 4e3, 8e3] # blows the memory
+  paths = [8, 80, 4e2, 8e2, 4e3]
   for i, pi in enumerate(paths):
       follower_points, follower_interpolation = external_forces(_interpolation, int(pi))
       inputforces = dict(follower_points=follower_points,
@@ -3219,7 +3221,6 @@ plotly color scales:
   jac_rho, jac_length, jac_intensity = validation_ad()
 
 #+end_src
-
 
 * Gust solution (146)
 :PROPERTIES:
