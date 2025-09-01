@@ -1,4 +1,4 @@
-# [[file:modelgeneration.org::*AD_t][AD_t:1]]
+# [[file:modelgeneration.org::*AD_t][AD_t:2]]
 import pathlib
 import time
 #import jax.numpy as jnp
@@ -141,6 +141,6 @@ for i, ei in enumerate(epsilons):
     mc1_eobj.append(sol4e.staticsystem_s1.objective)
     mc1_ejac.append((mc1_eobj[i] - obj_t) / ei)
     jac_ediff.append(jnp.linalg.norm((mc1_ejac[i]-jac_t) / jac_t))
-
+    
 jnp.save(f"{results_path}/ADDiscreteMC1_te/jac_e.npy", jnp.array(jac_ediff))
-# AD_t:1 ends here
+# AD_t:2 ends here

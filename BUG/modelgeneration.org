@@ -2947,7 +2947,7 @@ for plotting and local testing:
 #+begin_src python :tangle settings_gust1shardbench.py :session *pyshard2*
   <<ImportsFeniaxShard>>
   <<GustMain>>
-
+  device_count = 1
   inp.driver.sol_path = pathlib.Path(
       f"{results_path}/gust1_{sol}ShardBench")
   inp.system.aero.gust.fixed_discretisation = [150, u_inf]
